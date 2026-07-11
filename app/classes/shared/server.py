@@ -486,6 +486,7 @@ class ServerInstance:
                     )
                     logger.info("Reattached to server worker for %s (PID %s)", self.name, self.process.pid)
                     self.start_worker_output_listener()
+                    self.after_start(None, self.helper.get_setting("language"))
             except (OSError, ValueError, json.JSONDecodeError):
                 logger.warning("Unable to reattach server worker for %s", self.name)
         # Check update relies on up to date information from self.settings.
