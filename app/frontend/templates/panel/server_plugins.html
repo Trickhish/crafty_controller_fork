@@ -1,0 +1,60 @@
+{% extends ../base.html %}
+
+{% block title %}Crafty Controller - Plugins{% end %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="row page-title-header">
+    <div class="col-12"><div class="page-header"><h4 class="page-title">Plugins - {{ data['server_stats']['server_id']['server_name'] }}</h4></div></div>
+  </div>
+  <div class="row"><div class="col-12 grid-margin">
+    <div class="card"><div class="card-body">
+      <span class="d-none d-sm-block">{% include "parts/server_controls_list.html" %}</span>
+      <span class="d-block d-sm-none">{% include "parts/m_server_controls_list.html" %}</span>
+
+      <h5>Installed plugins</h5>
+      {% if data['plugins'] %}
+      <ul class="list-group mb-4">
+        {% for plugin in data['plugins'] %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ plugin['name'] }} <span class="text-muted">{{ plugin['size'] }} bytes</span>
+        </li>
+        {% end %}
+      </ul>
+      {% else %}
+      <p class="text-muted">No JAR plugins are installed.</p>
+      {% end %}
+
+      <h5>Recommended</h5>
+      <div class="card mb-4"><div class="card-body">
+        <h6>Live Reload</h6>
+        <p class="mb-2 text-muted">Reload the configured MOTD and server icon without restarting Minecraft.</p>
+        <span class="badge badge-info">Manual JAR upload</span>
+      </div></div>
+
+      <h5>Install plugin</h5>
+      <p class="text-muted">Upload a trusted Paper plugin JAR. It will be placed in the server's <code>plugins/</code> directory.</p>
+      <input type="file" id="plugin-file" class="form-control-file" accept=".jar,application/java-archive">
+      <button id="upload-plugin" class="btn btn-primary mt-3"><i class="ph ph-upload-simple"></i> Upload plugin</button>
+      <div id="plugin-status" class="mt-3"></div>
+    </div></div>
+  </div></div>
+</div>
+<script src="/static/assets/js/shared/upload.js"></script>
+<script>
+  const serverId = "{{ data['server_stats']['server_id']['server_id'] }}";
+  document.getElementById("upload-plugin").addEventListener("click", async () => {
+    const input = document.getElementById("plugin-file");
+    const status = document.getElementById("plugin-status");
+    if (!input.files.length) { status.textContent = "Choose a plugin JAR first."; return; }
+    const file = input.files[0];
+    if (!file.name.toLowerCase().endsWith(".jar")) { status.textContent = "Only .jar files are accepted."; return; }
+    status.textContent = "Uploading...";
+    try {
+      await handleUpload([file], "plugins");
+      status.textContent = "Plugin uploaded. Restart the Minecraft server to load it.";
+      setTimeout(() => location.reload(), 1000);
+    } catch (error) { status.textContent = "Upload failed: " + error; }
+  });
+</script>
+{% end %}

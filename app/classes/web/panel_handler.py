@@ -36,6 +36,7 @@ SUBPAGE_PERMS = {
     "schedules": EnumPermissionsServer.SCHEDULE,
     "backup": EnumPermissionsServer.BACKUP,
     "files": EnumPermissionsServer.FILES,
+    "plugins": EnumPermissionsServer.FILES,
     "config": EnumPermissionsServer.CONFIG,
     "admin_controls": EnumPermissionsServer.PLAYERS,
     "metrics": EnumPermissionsServer.LOGS,
@@ -703,6 +704,20 @@ class PanelHandler(BaseHandler):
                 page_data["schedules"] = HelpersManagement.get_schedules_by_server(
                     server_id
                 )
+
+            if subpage == "plugins":
+                plugins_dir = Path(page_data["server_stats"]["server_id"]["path"], "plugins")
+                page_data["plugins"] = []
+                try:
+                    plugins_dir.mkdir(parents=True, exist_ok=True)
+                    page_data["plugins"] = [
+                        {"name": item.name, "size": item.stat().st_size}
+                        for item in sorted(
+                            plugins_dir.glob("*.jar"), key=lambda path: path.name.casefold()
+                        )
+                    ]
+                except OSError:
+                    logger.exception("Unable to list plugins in %s", plugins_dir)
 
             if subpage == "update_center":
                 page_data["server_api"] = (
