@@ -25,13 +25,15 @@
       <p class="text-muted">No JAR plugins are installed.</p>
       {% end %}
 
-      <h5>Recommended</h5>
-      <div class="card mb-4"><div class="card-body">
-        <h6>EasyMOTD</h6>
-        <p class="mb-2 text-muted">Live MOTD and server-icon management for Paper servers.</p>
-        <button id="install-live-reload" class="btn btn-sm btn-outline-primary">Install recommended plugin</button>
-        <span id="recommended-status" class="ml-2 text-muted"></span>
-      </div></div>
+      <h5>Plugin library</h5>
+      <p class="text-muted">Install Paper plugins directly from Modrinth. Always review a plugin's permissions and compatibility before installing it.</p>
+      <div id="plugin-library" class="row mb-4"></div>
+      <div class="input-group mb-2">
+        <input id="plugin-search" class="form-control" placeholder="Search the Modrinth plugin library...">
+        <div class="input-group-append"><button id="plugin-search-button" class="btn btn-outline-secondary">Search</button></div>
+      </div>
+      <div id="plugin-search-status" class="text-muted mb-3"></div>
+      <div id="plugin-search-results" class="row mb-4"></div>
 
       <h5>Install plugin</h5>
       <p class="text-muted">Upload a trusted Paper plugin JAR. It will be placed in the server's <code>plugins/</code> directory.</p>
@@ -79,21 +81,60 @@
       setTimeout(() => location.reload(), 1000);
     } catch (error) { status.textContent = "Upload failed: " + error; }
   });
-  document.getElementById("install-live-reload").addEventListener("click", async () => {
-    const status = document.getElementById("recommended-status");
-    status.textContent = "Fetching latest Paper release...";
+  const libraryPlugins = [
+    { id: "easymotd", name: "EasyMOTD", description: "Live MOTD and server-icon management for Paper servers." },
+    { id: "luckperms", name: "LuckPerms", description: "Fast, flexible permissions management." },
+    { id: "essentialsx", name: "EssentialsX", description: "Essential commands and gameplay features." },
+    { id: "viaversion", name: "ViaVersion", description: "Allow newer Minecraft clients to join older servers." },
+    { id: "worldedit", name: "WorldEdit", description: "Powerful in-game world editing tools." },
+    { id: "placeholderapi", name: "PlaceholderAPI", description: "A placeholder expansion API for other plugins." },
+    { id: "spark", name: "spark", description: "Performance profiling and diagnostics." }
+  ];
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>\"']/g, (character) => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;"}[character]));
+  }
+  function pluginCard(plugin, target) {
+    const card = document.createElement("div");
+    card.className = "col-md-6 col-lg-4 mb-3";
+    card.innerHTML = `<div class="card h-100"><div class="card-body d-flex flex-column"><h6>${escapeHtml(plugin.name)}</h6><p class="text-muted small flex-grow-1">${escapeHtml(plugin.description || "Paper plugin from Modrinth.")}</p><button class="btn btn-sm btn-outline-primary install-plugin">Install</button><span class="plugin-install-status small text-muted mt-2"></span></div></div>`;
+    card.querySelector(".install-plugin").addEventListener("click", async () => {
+      const status = card.querySelector(".plugin-install-status");
+      status.textContent = "Fetching latest release...";
+      try {
+        const versions = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(plugin.id)}/version?loaders=%5B%22paper%22%5D`).then((response) => {
+          if (!response.ok) throw new Error("Plugin is unavailable on Modrinth");
+          return response.json();
+        });
+        const release = versions.find((version) => version.version_type === "release") || versions[0];
+        if (!release) throw new Error("No compatible Paper release found");
+        const file = release.files.find((candidate) => candidate.primary) || release.files[0];
+        const blob = await fetch(file.url).then((response) => response.blob());
+        status.textContent = "Installing...";
+        await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
+        status.textContent = "Installed. Restart Minecraft to load it.";
+        setTimeout(() => location.reload(), 1200);
+      } catch (error) { status.textContent = "Installation failed: " + error; }
+    });
+    target.appendChild(card);
+  }
+  libraryPlugins.forEach((plugin) => pluginCard(plugin, document.getElementById("plugin-library")));
+  async function searchPlugins() {
+    const query = document.getElementById("plugin-search").value.trim();
+    const status = document.getElementById("plugin-search-status");
+    const results = document.getElementById("plugin-search-results");
+    if (!query) { results.replaceChildren(); status.textContent = "Enter a plugin name to search."; return; }
+    status.textContent = "Searching Modrinth...";
+    results.replaceChildren();
     try {
-      const versions = await fetch("https://api.modrinth.com/v2/project/easymotd/version?loaders=%5B%22paper%22%5D").then((response) => response.json());
-      const release = versions.find((version) => version.version_type === "release") || versions[0];
-      const file = release.files.find((candidate) => candidate.primary) || release.files[0];
-      const blob = await fetch(file.url).then((response) => response.blob());
-      status.textContent = "Installing...";
-      await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
-      status.textContent = "Installed. Restart Minecraft to load the plugin.";
-      setTimeout(() => location.reload(), 1000);
-    } catch (error) {
-      status.textContent = "Installation failed: " + error;
-    }
-  });
+      const facets = encodeURIComponent(JSON.stringify([["project_type:plugin"], ["categories:paper"]]));
+      const response = await fetch(`https://api.modrinth.com/v2/search?query=${encodeURIComponent(query)}&facets=${facets}&limit=12`);
+      if (!response.ok) throw new Error("Search failed");
+      const hits = (await response.json()).hits || [];
+      hits.forEach((hit) => pluginCard({ id: hit.project_id, name: hit.title, description: hit.description }, results));
+      status.textContent = hits.length ? `${hits.length} plugin(s) found.` : "No Paper plugins found.";
+    } catch (error) { status.textContent = "Search failed: " + error; }
+  }
+  document.getElementById("plugin-search-button").addEventListener("click", searchPlugins);
+  document.getElementById("plugin-search").addEventListener("keydown", (event) => { if (event.key === "Enter") searchPlugins(); });
 </script>
 {% end %}
