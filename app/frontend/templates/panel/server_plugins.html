@@ -27,9 +27,10 @@
 
       <h5>Recommended</h5>
       <div class="card mb-4"><div class="card-body">
-        <h6>Live Reload</h6>
-        <p class="mb-2 text-muted">Reload the configured MOTD and server icon without restarting Minecraft.</p>
-        <span class="badge badge-info">Manual JAR upload</span>
+        <h6>EasyMOTD</h6>
+        <p class="mb-2 text-muted">Live MOTD and server-icon management for Paper servers.</p>
+        <button id="install-live-reload" class="btn btn-sm btn-outline-primary">Install recommended plugin</button>
+        <span id="recommended-status" class="ml-2 text-muted"></span>
       </div></div>
 
       <h5>Install plugin</h5>
@@ -55,6 +56,22 @@
       status.textContent = "Plugin uploaded. Restart the Minecraft server to load it.";
       setTimeout(() => location.reload(), 1000);
     } catch (error) { status.textContent = "Upload failed: " + error; }
+  });
+  document.getElementById("install-live-reload").addEventListener("click", async () => {
+    const status = document.getElementById("recommended-status");
+    status.textContent = "Fetching latest Paper release...";
+    try {
+      const versions = await fetch("https://api.modrinth.com/v2/project/easymotd/version?loaders=%5B%22paper%22%5D").then((response) => response.json());
+      const release = versions.find((version) => version.version_type === "release") || versions[0];
+      const file = release.files.find((candidate) => candidate.primary) || release.files[0];
+      const blob = await fetch(file.url).then((response) => response.blob());
+      status.textContent = "Installing...";
+      await handleUpload([new File([blob], file.filename, { type: "application/java-archive" })], "plugins");
+      status.textContent = "Installed. Restart Minecraft to load the plugin.";
+      setTimeout(() => location.reload(), 1000);
+    } catch (error) {
+      status.textContent = "Installation failed: " + error;
+    }
   });
 </script>
 {% end %}
