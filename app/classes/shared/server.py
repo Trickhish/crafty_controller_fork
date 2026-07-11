@@ -79,20 +79,43 @@ class WorkerProcess:
         return proxy
 
     @classmethod
-    def launch(cls, socket_path, cwd, command, log_path):
-        worker_command = [
-            sys.executable,
-            "-m",
-            "app.classes.server_worker",
-            "--socket",
-            socket_path,
-            "--cwd",
-            cwd,
-            "--log",
-            log_path,
-            *command,
-        ]
-        subprocess.Popen(worker_command, cwd=os.path.abspath(os.curdir), start_new_session=True)
+    def launch(cls, socket_path, cwd, command, log_path, server_id):
+        supervisor_socket = "/var/opt/minecraft/crafty-fork-data/supervisor.sock"
+        request = {
+            "action": "start",
+            "server_id": str(server_id),
+            "worker_socket": socket_path,
+            "cwd": cwd,
+            "command": command,
+            "log_path": log_path,
+            "project_root": os.path.abspath(os.curdir),
+        }
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+                connection.settimeout(3)
+                connection.connect(supervisor_socket)
+                connection.sendall((json.dumps(request) + "\n").encode("utf-8"))
+                response = json.loads(connection.makefile("rb").readline())
+            if not response.get("running"):
+                raise RuntimeError(response.get("error", "supervisor failed to start worker"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            # Keep direct worker startup as a compatibility fallback.
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "app.classes.server_worker",
+                    "--socket",
+                    socket_path,
+                    "--cwd",
+                    cwd,
+                    "--log",
+                    log_path,
+                    *command,
+                ],
+                cwd=os.path.abspath(os.curdir),
+                start_new_session=True,
+            )
         for _ in range(50):
             time.sleep(0.1)
             proxy = cls.connect(socket_path, log_path)
@@ -621,6 +644,7 @@ class ServerInstance:
                 self.server_path,
                 self.server_command,
                 os.path.join(self.server_path, "logs", "crafty-worker.log"),
+                self.server_id,
             )
         except Exception as ex:
             # Checks for java on initial fail
