@@ -462,6 +462,7 @@ class ServerInstance:
                         )
                     )
                     logger.info("Reattached to server worker for %s (PID %s)", self.name, self.process.pid)
+                    self.start_worker_output_listener()
             except (OSError, ValueError, json.JSONDecodeError):
                 logger.warning("Unable to reattach server worker for %s", self.name)
         # Check update relies on up to date information from self.settings.
@@ -635,6 +636,7 @@ class ServerInstance:
                         },
                     )
                 return False
+
             logger.exception(
                 f"Server {self.name} failed to start with error code: {ex}"
             )
@@ -648,6 +650,17 @@ class ServerInstance:
                         ).format(self.name, ex)
                     },
                 )
+
+    def start_worker_output_listener(self):
+        if getattr(self.process, "stdout", None) is None:
+            return
+        out_buf = ServerOutBuf(self.helper, self.process, self.server_id)
+        logger.debug("Starting worker log listener for server %s", self.server_id)
+        threading.Thread(
+            target=out_buf.check,
+            daemon=True,
+            name=f"{self.server_id}_virtual_terminal",
+        ).start()
 
     def do_minecraft_bedrock_start(self, user_id, user_lang):
         if Helpers.is_os_windows():
