@@ -58,10 +58,10 @@
                 <div class="form-group">
                   <label for="server_description">Server description (MOTD)</label>
                   <textarea class="form-control" name="server_description" id="server_description" rows="2"
-                    maxlength="256" placeholder="Displayed in the Minecraft server list">{% if data['server_stats']['desc'] %}{{ data['server_stats']['desc'] }}{% end %}</textarea>
+                    maxlength="256" placeholder="Displayed in the Minecraft server list">{{ data['server_description'] }}</textarea>
                   <small class="form-text text-muted">Changes apply when the Minecraft server next starts.</small>
                   <div class="custom-control custom-switch mt-2">
-                    <input type="checkbox" class="custom-control-input" id="server_name_as_motd" checked>
+                    <input type="checkbox" class="custom-control-input" id="server_name_as_motd" {% if data['server_description'] == data['server_stats']['server_id']['server_name'] %}checked{% end %}>
                     <label class="custom-control-label" for="server_name_as_motd">Use the Crafty server name as the Minecraft description</label>
                   </div>
                 </div>
