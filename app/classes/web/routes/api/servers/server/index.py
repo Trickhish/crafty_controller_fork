@@ -392,7 +392,10 @@ class ApiServersServerIndexHandler(BaseApiHandler):
                 with open(easymotd_config, "r", encoding="utf-8") as config_file:
                     plugin_config = yaml.safe_load(config_file) or {}
                 random_config = plugin_config.setdefault("random-motds", {})
-                random_config["enabled"] = False
+                # EasyMOTD serves an empty MOTD when both its timed and random
+                # modes are disabled. Keep the single Crafty-managed entry
+                # active so the value is visible immediately after reload.
+                random_config["enabled"] = True
                 motds = random_config.setdefault("motds", {})
                 motd1 = motds.setdefault("motd1", {})
                 motd1["motd"] = data["server_description"].splitlines() or [""]
