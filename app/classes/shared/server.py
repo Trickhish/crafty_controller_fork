@@ -42,6 +42,24 @@ from app.classes.remote_stats.stats import Stats
 from app.classes.shared.console import Console
 
 
+class WorkerLogStream:
+    """File-backed stream that behaves like a blocking process stdout pipe."""
+
+    def __init__(self, path, process):
+        self.process = process
+        self.file = open(path, "rb")  # pylint: disable=consider-using-with
+        self.file.seek(0, os.SEEK_END)
+
+    def readline(self):
+        while True:
+            line = self.file.readline()
+            if line:
+                return line
+            if self.process.poll() is not None:
+                return b""
+            time.sleep(0.1)
+
+
 class WorkerProcess:
     """Popen-compatible proxy for a persistent server worker."""
 
@@ -49,7 +67,7 @@ class WorkerProcess:
         self.socket_path = socket_path
         self.pid = pid
         self.returncode = None
-        self.stdout = open(log_path, "rb") if log_path else None  # pylint: disable=consider-using-with
+        self.stdout = WorkerLogStream(log_path, self) if log_path else None
 
     @classmethod
     def connect(cls, socket_path, log_path=None):
@@ -224,6 +242,14 @@ class ServerOutBuf:
         self._queue = queue.Queue()
 
         def reader():
+            if isinstance(self.proc.stdout, WorkerLogStream):
+                while True:
+                    line = self.proc.stdout.readline().decode("UTF-8", errors="ignore")
+                    if not line:
+                        break
+                    self._queue.put(line)
+                return
+
             text_wrapper = io.TextIOWrapper(
                 self.proc.stdout,
                 encoding="UTF-8",
@@ -231,7 +257,6 @@ class ServerOutBuf:
                 newline=None,
                 line_buffering=True,
             )
-
             while True:
                 line = text_wrapper.readline()
                 if not line:
