@@ -396,8 +396,10 @@ class ApiServersServerIndexHandler(BaseApiHandler):
                 # modes are disabled. Keep the single Crafty-managed entry
                 # active so the value is visible immediately after reload.
                 random_config["enabled"] = True
-                motds = random_config.setdefault("motds", {})
-                motd1 = motds.setdefault("motd1", {})
+                # Crafty owns the active entry. Remove bundled/default entries
+                # so random selection cannot return a stale MOTD.
+                motd1 = {}
+                random_config["motds"] = {"motd1": motd1}
                 motd1["motd"] = data["server_description"].splitlines() or [""]
                 if "server_icon" in data and data["server_icon"]:
                     icons_dir = os.path.join(server_path, "plugins", "EasyMOTD", "icons")
