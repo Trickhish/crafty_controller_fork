@@ -3,11 +3,11 @@ app/config/db
 app/config/default-creds.txt
 app/config/session.lock
 app/config/web/certs
-servers
-backups
-logs
-temp
-import
+/servers
+/backups
+/logs
+/temp
+/import
 
 # Runtime-generated files
 __pycache__/
