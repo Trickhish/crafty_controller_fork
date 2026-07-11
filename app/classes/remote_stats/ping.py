@@ -123,62 +123,66 @@ def get_code_format(format_name):
 
 # For the rest of requests see wiki.vg/Protocol
 def ping(ip, port):
-    def read_var_int():
-        i = 0
-        j = 0
-        while True:
-            try:
-                k = sock.recv(1)
-                if not k:
-                    raise ValueError()
-            except:
-                return 0
-            k = k[0]
-            i |= (k & 0x7F) << (j * 7)
-            j += 1
-            if j > 5:
-                raise ValueError("var_int too big")
-            if not k & 0x80:
-                return i
+    def ping_once(proxy_header=None):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5)
-    try:
-        sock.connect((ip, port))
+        def read_var_int():
+            value = 0
+            shift = 0
+            while True:
+                byte = sock.recv(1)
+                if not byte:
+                    raise ValueError("connection closed while reading varint")
+                byte = byte[0]
+                value |= (byte & 0x7F) << shift
+                if not byte & 0x80:
+                    return value
+                shift += 7
+                if shift > 35:
+                    raise ValueError("var_int too big")
 
-    except:
-        return False
-
-    try:
-        host = ip.encode("utf-8")
-        data = b""  # wiki.vg/Server_List_Ping
-        data += b"\x00"  # packet ID
-        data += b"\x04"  # protocol variant
-        data += struct.pack(">b", len(host)) + host
-        data += struct.pack(">H", port)
-        data += b"\x01"  # next state
-        data = struct.pack(">b", len(data)) + data
-        sock.sendall(data + b"\x01\x00")  # handshake + status ping
-        length = read_var_int()  # full packet length
-        if length < 10:
-            return length >= 0
-
-        sock.recv(1)  # packet type, 0 for pings
-        length = read_var_int()  # string length
-        data = b""
-        while len(data) != length:
-            chunk = sock.recv(length - len(data))
-            if not chunk:
-                return False
-
-            data += chunk
-        logger.debug(f"Server reports this data on ping: {data}")
         try:
-            return Server(json.loads(data))
-        except (KeyError, json.decoder.JSONDecodeError):
-            return {}
-    finally:
-        sock.close()
+            sock.connect((ip, port))
+            host = ip.encode("utf-8")
+            data = b"\x00\x04"  # packet ID and legacy-compatible protocol
+            data += struct.pack(">b", len(host)) + host
+            data += struct.pack(">H", port)
+            data += b"\x01"  # next state: status
+            handshake = struct.pack(">b", len(data)) + data
+            status_ping = b"\x01\x00"
+            sock.sendall((proxy_header or b"") + handshake + status_ping)
+
+            packet_length = read_var_int()
+            if packet_length < 10:
+                return False
+            sock.recv(1)  # packet type, 0 for pings
+            data_length = read_var_int()
+            data = b""
+            while len(data) != data_length:
+                chunk = sock.recv(data_length - len(data))
+                if not chunk:
+                    return False
+                data += chunk
+            logger.debug("Server reports this data on ping: %s", data)
+            try:
+                return Server(json.loads(data))
+            except (KeyError, json.decoder.JSONDecodeError):
+                return {}
+        except (OSError, ValueError, json.decoder.JSONDecodeError):
+            return False
+        finally:
+            sock.close()
+
+    result = ping_once()
+    if result:
+        return result
+
+    # Paper servers configured for HAProxy require this header before the
+    # Minecraft handshake. Retry with a local IPv4 PROXY protocol header so
+    # Crafty can monitor those servers without affecting normal servers.
+    proxy_header = f"PROXY TCP4 127.0.0.1 {ip} 25565 {port}\r\n".encode("ascii")
+    return ping_once(proxy_header)
 
 
 # For the rest of requests see wiki.vg/Protocol
