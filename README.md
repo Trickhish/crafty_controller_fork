@@ -11,6 +11,13 @@ of Crafty Controller is to launch a Minecraft Server in the background and prese
 a web interface for the server administrators to interact with their servers. Crafty
 is compatible with Docker, Linux, Windows.
 
+### Server process supervision
+This fork runs Minecraft servers through persistent per-server workers. Restarting
+the Crafty web process leaves running Minecraft servers in place; the next Crafty
+process reconnects to their workers automatically. On Linux, use the service unit
+in [`config_examples/crafty.service`](config_examples/crafty.service) with
+`KillMode=process` so systemd leaves those workers running.
+
 ## Documentation
 Documentation available on [Crafty Docs](https://docs.craftycontrol.com)
 

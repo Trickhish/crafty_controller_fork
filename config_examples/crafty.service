@@ -1,0 +1,15 @@
+[Unit]
+Description=Crafty 4
+After=network.target
+
+[Service]
+Type=simple
+User=crafty
+WorkingDirectory=/home/crafty_fork
+# Crafty workers own Minecraft processes and survive a Crafty restart.
+KillMode=process
+ExecStart=/var/opt/minecraft/crafty/.venv/bin/python /home/crafty_fork/main.py -d
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

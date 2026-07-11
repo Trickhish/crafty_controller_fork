@@ -6,7 +6,9 @@ import logging
 import os
 import re
 import shutil
+import socket
 import subprocess
+import sys
 import threading
 import time
 from contextlib import redirect_stderr
@@ -38,6 +40,82 @@ from app.classes.remote_stats.nitrado_ping import NitradoPing
 from app.classes.remote_stats.ping import ping, ping_raknet
 from app.classes.remote_stats.stats import Stats
 from app.classes.shared.console import Console
+
+
+class WorkerProcess:
+    """Popen-compatible proxy for a persistent server worker."""
+
+    def __init__(self, socket_path, pid):
+        self.socket_path = socket_path
+        self.pid = pid
+        self.returncode = None
+
+    @classmethod
+    def connect(cls, socket_path):
+        proxy = cls(socket_path, 0)
+        status = proxy.request("status")
+        if not status.get("running"):
+            return None
+        proxy.pid = status["pid"]
+        return proxy
+
+    @classmethod
+    def launch(cls, socket_path, cwd, command, log_path):
+        worker_command = [
+            sys.executable,
+            "-m",
+            "app.classes.server_worker",
+            "--socket",
+            socket_path,
+            "--cwd",
+            cwd,
+            "--log",
+            log_path,
+            *command,
+        ]
+        subprocess.Popen(worker_command, cwd=os.path.abspath(os.curdir), start_new_session=True)
+        for _ in range(50):
+            time.sleep(0.1)
+            proxy = cls.connect(socket_path)
+            if proxy:
+                return proxy
+        raise RuntimeError("Server worker did not start")
+
+    def request(self, action, command=""):
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+            connection.settimeout(2)
+            connection.connect(self.socket_path)
+            connection.sendall(
+                (json.dumps({"action": action, "command": command}) + "\n").encode("utf-8")
+            )
+            return json.loads(connection.makefile("rb").readline())
+
+    def poll(self):
+        try:
+            status = self.request("status")
+        except (OSError, ValueError, json.JSONDecodeError):
+            self.returncode = 1
+            return self.returncode
+        if status.get("running"):
+            return None
+        self.returncode = status.get("returncode", 0)
+        return self.returncode
+
+    def write(self, data):
+        self.request("write", data.decode("utf-8"))
+
+    def flush(self):
+        return None
+
+    @property
+    def stdin(self):
+        return self
+
+    def terminate(self):
+        self.request("terminate")
+
+    def kill(self):
+        self.request("kill")
 from app.classes.shared.null_writer import NullWriter
 from app.classes.shared.update_mgr import UpdateManager
 from app.classes.shared.websocket_manager import WebSocketManager
@@ -344,6 +422,19 @@ class ServerInstance:
         self.server_id = server_id
         self.name = server_name
         self.settings = server_data_obj
+        worker_socket = os.path.join(server_data_obj["path"], ".crafty-worker.sock")
+        if os.path.exists(worker_socket):
+            try:
+                self.process = WorkerProcess.connect(worker_socket)
+                if self.process:
+                    self.start_time = str(
+                        datetime.datetime.now(tz=ZoneInfo("Etc/UTC")).strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        )
+                    )
+                    logger.info("Reattached to server worker for %s (PID %s)", self.name, self.process.pid)
+            except (OSError, ValueError, json.JSONDecodeError):
+                logger.warning("Unable to reattach server worker for %s", self.name)
         # Check update relies on up to date information from self.settings.
         self.update_manager.check_server_version(self.settings)
         # Running it after instead of during init function
@@ -495,12 +586,11 @@ class ServerInstance:
 
     def do_generic_start(self, user_id, user_lang):
         try:
-            self.process = subprocess.Popen(
+            self.process = WorkerProcess.launch(
+                os.path.join(self.server_path, ".crafty-worker.sock"),
+                self.server_path,
                 self.server_command,
-                cwd=self.server_path,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                os.path.join(self.server_path, "logs", "crafty-worker.log"),
             )
         except Exception as ex:
             # Checks for java on initial fail
@@ -814,12 +904,7 @@ class ServerInstance:
             case "steam_cmd":
                 self.do_steam_server_start(user_id, user_lang)
 
-        out_buf = ServerOutBuf(self.helper, self.process, self.server_id)
-
-        logger.debug(f"Starting virtual terminal listener for server {self.name}")
-        threading.Thread(
-            target=out_buf.check, daemon=True, name=f"{self.server_id}_virtual_terminal"
-        ).start()
+        logger.debug("Server output is persisted by the worker for server %s", self.server_id)
 
         self.is_crashed = False
         self.stats_helper.server_crash_reset()

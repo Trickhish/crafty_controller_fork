@@ -229,14 +229,8 @@ class TasksManager:
                 exc_info=True,
             )
 
-        # Shutting down servers is capable of throwing many different errors. This may
-        # need to be handled in subclasses rather than here. A quick review of sub-calls
-        # shows ValueError, RuntimeError, BrokenPipeError, and OSError are all
-        # possible.
-        try:
-            self.controller.servers.stop_all_servers()
-        except:
-            logger.info("Caught error during shutdown", exc_info=True)
+        # Server processes are owned by persistent workers and intentionally survive
+        # a Crafty web-process restart. They are stopped explicitly from the panel.
 
         try:
             temp_dir = os.path.join(self.controller.project_root, "temp")
