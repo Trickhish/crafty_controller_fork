@@ -1,4 +1,5 @@
 # pylint: disable=too-many-lines
+import base64
 import time
 import datetime
 import os
@@ -610,6 +611,7 @@ class PanelHandler(BaseHandler):
                     "started": "False",
                 }
             page_data["server_description"] = ""
+            page_data["server_icon"] = ""
             properties_path = os.path.join(
                 page_data["server_stats"]["server_id"]["path"],
                 "server.properties",
@@ -622,6 +624,15 @@ class PanelHandler(BaseHandler):
                             break
             except OSError:
                 logger.debug("Unable to read server MOTD from %s", properties_path)
+            icon_path = os.path.join(
+                page_data["server_stats"]["server_id"]["path"],
+                "server-icon.png",
+            )
+            try:
+                with open(icon_path, "rb") as icon_file:
+                    page_data["server_icon"] = base64.b64encode(icon_file.read()).decode("ascii")
+            except OSError:
+                logger.debug("Unable to read server icon from %s", icon_path)
             if not self.failed_server:
                 page_data["importing"] = self.controller.servers.get_import_status(
                     server_id
