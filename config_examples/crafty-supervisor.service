@@ -1,5 +1,5 @@
 [Unit]
-Description=Crafty test Minecraft server supervisor
+Description=Crafty Minecraft server supervisor
 After=network.target
 
 [Service]

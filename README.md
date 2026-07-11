@@ -14,9 +14,9 @@ is compatible with Docker, Linux, Windows.
 ### Server process supervision
 This fork runs Minecraft servers through persistent per-server workers. Restarting
 the Crafty web process leaves running Minecraft servers in place; the next Crafty
-process reconnects to their workers automatically. On Linux, use the service unit
-in [`config_examples/crafty.service`](config_examples/crafty.service) with
-`KillMode=process` so systemd leaves those workers running.
+process reconnects to their workers automatically. On Linux, run the web application
+and supervisor as separate services using [`config_examples/crafty-web.service`](config_examples/crafty-web.service)
+and [`config_examples/crafty-supervisor.service`](config_examples/crafty-supervisor.service).
 
 ## Documentation
 Documentation available on [Crafty Docs](https://docs.craftycontrol.com)
