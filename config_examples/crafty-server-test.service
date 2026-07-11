@@ -1,0 +1,14 @@
+[Unit]
+Description=Crafty test Minecraft server supervisor
+After=network.target
+
+[Service]
+Type=simple
+User=crafty
+WorkingDirectory=/home/crafty_fork
+ExecStart=/var/opt/minecraft/crafty/.venv/bin/python -m app.classes.server_worker --socket /var/opt/minecraft/crafty-fork-data/servers/1b7b6ee4-01f6-4d81-983b-530635a9063e/.crafty-worker.sock --cwd /var/opt/minecraft/crafty-fork-data/servers/1b7b6ee4-01f6-4d81-983b-530635a9063e --log /var/opt/minecraft/crafty-fork-data/servers/1b7b6ee4-01f6-4d81-983b-530635a9063e/logs/crafty-worker.log java -Xms1000M -Xmx2000M -jar paper.jar nogui
+Restart=on-failure
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
