@@ -56,14 +56,10 @@
 
                 {% if data['server_stats']['server_type'] == "minecraft-java" %}
                 <div class="form-group">
-                  <label for="server_description">Server description (MOTD)</label>
+                  <label for="server_description">Minecraft server name (MOTD)</label>
                   <textarea class="form-control" name="server_description" id="server_description" rows="2"
                     maxlength="256" placeholder="Displayed in the Minecraft server list">{{ data['server_description'] }}</textarea>
                   <small class="form-text text-muted">Changes apply when the Minecraft server next starts.</small>
-                  <div class="custom-control custom-switch mt-2">
-                    <input type="checkbox" class="custom-control-input" id="server_name_as_motd" {% if data['server_description'] == data['server_stats']['server_id']['server_name'] %}checked{% end %}>
-                    <label class="custom-control-label" for="server_name_as_motd">Use the Crafty server name as the Minecraft description</label>
-                  </div>
                 </div>
                 <div class="form-group">
                   <label for="server_icon">Server icon</label>
@@ -589,10 +585,6 @@
       } else {
         delete formDataObject.server_icon;
       }
-      if (document.getElementById("server_name_as_motd")?.checked) {
-        formDataObject.server_description = formDataObject.server_name;
-      }
-      delete formDataObject.server_name_as_motd;
       //We need to make sure these are sent regardless of whether or not they're checked
       formDataObject.show_status = $("#show_status").prop('checked');
       formDataObject.crash_detection = $("#crash_detection").prop('checked');
