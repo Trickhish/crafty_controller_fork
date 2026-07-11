@@ -1,0 +1,32 @@
+{
+    "last_refreshed": "07/10/2026, 12:28:40",
+    "categories": {
+        "version": 1,
+        "linux_installer": "https://jars.arcadiatech.org/hytale/hytale-linux",
+        "linux_installer_hash": "52574d96cb67363c0eb4b5f1734348b00db4f39b7dcedfa8d56232eeced4705c",
+        "windows_installer": "https://jars.arcadiatech.org/hytale/hytale-windows.exe",
+        "windows_installer_hash": "4b8aa98917368be71705a0903d15d2fc7e64fa2d60c5f5917e3015778afb704b",
+        "commands": {
+            "version": 1,
+            "download_latest_command": "",
+            "game_version_command": "-print-version",
+            "downloader_version_command": "-version",
+            "downloader_updates_command": "-check-update",
+            "download_path_command": "-download-path",
+            "patch_line_command": "-patchline",
+            "skip_auto_update_command": "-skip-update-check"
+        },
+        "parsing_lines": {
+            "version": 1,
+            "verify_url_line_start": "https://oauth.accounts.hytale.com/oauth2/device/verify",
+            "auth_code_line_start": "Authorization code:"
+        },
+        "plugins": {
+            "version": 1,
+            "query_plugin": "https://jars.arcadiatech.org/hytale/plugins/query-plugin.jar",
+            "query_plugin_hash": "e30bd838ef1589374be081cb0784e3170e7e1f75763849208b0f0245feb84a61",
+            "webserver_plugin": "https://jars.arcadiatech.org/hytale/plugins/webserver-plugin.jar",
+            "webserver_plugin_hash": "76d055a372c7c1ecb12033e2cb0011969fedad13d16148dd7296ad96f6f9731b"
+        }
+    }
+}

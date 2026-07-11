@@ -1,0 +1,82 @@
+{
+    "allow_nsfw_profile_pictures": false,
+    "base_url": "localhost:8443",
+    "big_bucket_repo": "https://jars.arcadiatech.org",
+    "cookie_expire": 30,
+    "crafty_logs_delete_after_days": 0,
+    "delete_default_json": false,
+    "dir_size_poll_freq_minutes": 5,
+    "disabled_language_files": [],
+    "enable_otp_skew": false,
+    "enable_passkey_auth": false,
+    "enable_user_self_delete": false,
+    "experimental": false,
+    "general_user_log_access": false,
+    "history_max_age": 7,
+    "https_port": 8443,
+    "keywords": [
+        "help",
+        "chunk"
+    ],
+    "language": "en_EN",
+    "max_audit_entries": 300,
+    "max_log_lines": 700,
+    "max_login_attempts": 3,
+    "monitored_mounts": "/",
+    "passkey_rp_name": "Crafty Controller",
+    "reset_secrets_on_next_boot": false,
+    "sampling_fallback_divisor": 12,
+    "sampling_tiers": [
+        {
+            "max_hours": 6,
+            "sample_rate": 1
+        },
+        {
+            "max_hours": 24,
+            "sample_rate": 2
+        },
+        {
+            "max_hours": 72,
+            "sample_rate": 6
+        }
+    ],
+    "show_contribute_link": true,
+    "show_errors": true,
+    "silent_notif_fields": [
+        "dashboard_columns",
+        "server_order"
+    ],
+    "stats_update_frequency_seconds": 30,
+    "superMFA": false,
+    "time_range_presets": [
+        {
+            "hours": 1,
+            "label": "Last Hour"
+        },
+        {
+            "hours": 3,
+            "label": "Last 3 Hours"
+        },
+        {
+            "hours": 6,
+            "label": "Last 6 Hours"
+        },
+        {
+            "hours": 12,
+            "label": "Last 12 Hours"
+        },
+        {
+            "hours": 24,
+            "label": "Last 24 Hours"
+        },
+        {
+            "hours": 48,
+            "label": "Last 2 Days"
+        },
+        {
+            "hours": 168,
+            "label": "Last 7 Days"
+        }
+    ],
+    "virtual_terminal_lines": 70
+}
