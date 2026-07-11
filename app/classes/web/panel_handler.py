@@ -610,19 +610,18 @@ class PanelHandler(BaseHandler):
                     "started": "False",
                 }
             page_data["server_description"] = ""
-            if page_data["server_stats"].get("server_type") == "minecraft-java":
-                properties_path = os.path.join(
-                    page_data["server_stats"]["server_id"]["path"],
-                    "server.properties",
-                )
-                try:
-                    with open(properties_path, "r", encoding="utf-8") as properties_file:
-                        for line in properties_file:
-                            if line.startswith("motd="):
-                                page_data["server_description"] = line[5:].rstrip("\r\n")
-                                break
-                except OSError:
-                    logger.debug("Unable to read server MOTD from %s", properties_path)
+            properties_path = os.path.join(
+                page_data["server_stats"]["server_id"]["path"],
+                "server.properties",
+            )
+            try:
+                with open(properties_path, "r", encoding="utf-8") as properties_file:
+                    for line in properties_file:
+                        if line.startswith("motd="):
+                            page_data["server_description"] = line[5:].rstrip("\r\n")
+                            break
+            except OSError:
+                logger.debug("Unable to read server MOTD from %s", properties_path)
             if not self.failed_server:
                 page_data["importing"] = self.controller.servers.get_import_status(
                     server_id
