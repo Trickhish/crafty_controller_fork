@@ -41,15 +41,30 @@
     </div></div>
   </div></div>
 </div>
-<script src="/static/assets/js/shared/upload.js"></script>
 <script>
   const serverId = "{{ data['server_stats']['server_id']['server_id'] }}";
-  // The shared uploader normally runs inside the file manager. These no-op
-  // hooks keep its upload protocol usable on this focused plugins page.
-  const removeProgressItem = () => {};
-  const getTreeView = () => {};
   async function uploadPlugin(file) {
-    return uploadFile("server_upload", file, "plugins", 0, crypto.randomUUID());
+    const token = getCookie("_xsrf");
+    const fileId = crypto.randomUUID();
+    const bytes = await file.arrayBuffer();
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
+      .map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    const url = `/api/v2/servers/${serverId}/files/upload/`;
+    const baseHeaders = {
+      "X-XSRFToken": token, "chunked": "true", "fileSize": file.size,
+      "type": "server_upload", "totalChunks": "1", "fileName": file.name,
+      "location": "plugins", "fileId": fileId
+    };
+    let response = await fetch(url, { method: "POST", headers: baseHeaders });
+    if (!response.ok) throw new Error((await response.text()) || "Upload initialization failed");
+    response = await fetch(url, {
+      method: "POST",
+      headers: { ...baseHeaders, "chunkId": "0", "chunkHash": hash,
+        "Content-Range": `bytes 0-${file.size - 1}/${file.size}` },
+      body: bytes
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== "completed") throw new Error(result.error_data || "Upload failed");
   }
   document.getElementById("upload-plugin").addEventListener("click", async () => {
     const input = document.getElementById("plugin-file");
