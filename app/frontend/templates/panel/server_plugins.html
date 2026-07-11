@@ -44,6 +44,13 @@
 <script src="/static/assets/js/shared/upload.js"></script>
 <script>
   const serverId = "{{ data['server_stats']['server_id']['server_id'] }}";
+  // The shared uploader normally runs inside the file manager. These no-op
+  // hooks keep its upload protocol usable on this focused plugins page.
+  const removeProgressItem = () => {};
+  const getTreeView = () => {};
+  async function uploadPlugin(file) {
+    return uploadFile("server_upload", file, "plugins", 0, crypto.randomUUID());
+  }
   document.getElementById("upload-plugin").addEventListener("click", async () => {
     const input = document.getElementById("plugin-file");
     const status = document.getElementById("plugin-status");
@@ -52,7 +59,7 @@
     if (!file.name.toLowerCase().endsWith(".jar")) { status.textContent = "Only .jar files are accepted."; return; }
     status.textContent = "Uploading...";
     try {
-      await handleUpload([file], "plugins");
+      await uploadPlugin(file);
       status.textContent = "Plugin uploaded. Restart the Minecraft server to load it.";
       setTimeout(() => location.reload(), 1000);
     } catch (error) { status.textContent = "Upload failed: " + error; }
@@ -66,7 +73,7 @@
       const file = release.files.find((candidate) => candidate.primary) || release.files[0];
       const blob = await fetch(file.url).then((response) => response.blob());
       status.textContent = "Installing...";
-      await handleUpload([new File([blob], file.filename, { type: "application/java-archive" })], "plugins");
+      await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
       status.textContent = "Installed. Restart Minecraft to load the plugin.";
       setTimeout(() => location.reload(), 1000);
     } catch (error) {
