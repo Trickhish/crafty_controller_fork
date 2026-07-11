@@ -2,8 +2,10 @@ import base64
 import json
 import logging
 import os
+import shutil
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
+import yaml
 from playhouse.shortcuts import model_to_dict
 from app.classes.models.server_permissions import EnumPermissionsServer
 from app.classes.web.base_api_handler import BaseApiHandler
@@ -381,6 +383,31 @@ class ApiServersServerIndexHandler(BaseApiHandler):
                     400,
                     {"status": "error", "error": "ICON_WRITE_FAILED", "error_data": str(why)},
                 )
+
+        # EasyMOTD takes precedence over server.properties. Keep its live
+        # configuration synchronized when that recommended plugin is present.
+        easymotd_config = os.path.join(server_path, "plugins", "EasyMOTD", "config.yml")
+        if os.path.exists(easymotd_config) and "server_description" in data:
+            try:
+                with open(easymotd_config, "r", encoding="utf-8") as config_file:
+                    plugin_config = yaml.safe_load(config_file) or {}
+                random_config = plugin_config.setdefault("random-motds", {})
+                random_config["enabled"] = False
+                motds = random_config.setdefault("motds", {})
+                motd1 = motds.setdefault("motd1", {})
+                motd1["motd"] = data["server_description"].splitlines() or [""]
+                if "server_icon" in data and data["server_icon"]:
+                    icons_dir = os.path.join(server_path, "plugins", "EasyMOTD", "icons")
+                    os.makedirs(icons_dir, exist_ok=True)
+                    shutil.copyfile(os.path.join(server_path, "server-icon.png"), os.path.join(icons_dir, "crafty.png"))
+                    motd1["icon"] = "crafty.png"
+                timed_config = plugin_config.setdefault("timed-motds", {})
+                timed_config["enabled"] = False
+                with open(easymotd_config, "w", encoding="utf-8") as config_file:
+                    yaml.safe_dump(plugin_config, config_file, sort_keys=False)
+                self.controller.servers.get_server_instance_by_id(server_id).send_command("easymotd reload")
+            except (OSError, TypeError, yaml.YAMLError) as why:
+                logger.exception("Unable to synchronize EasyMOTD configuration: %s", why)
         java_flag = False
         for key in data:
             # If we don't validate the input there could be security issues
