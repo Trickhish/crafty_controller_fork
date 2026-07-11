@@ -45,14 +45,15 @@ from app.classes.shared.console import Console
 class WorkerProcess:
     """Popen-compatible proxy for a persistent server worker."""
 
-    def __init__(self, socket_path, pid):
+    def __init__(self, socket_path, pid, log_path=None):
         self.socket_path = socket_path
         self.pid = pid
         self.returncode = None
+        self.stdout = open(log_path, "rb") if log_path else None  # pylint: disable=consider-using-with
 
     @classmethod
-    def connect(cls, socket_path):
-        proxy = cls(socket_path, 0)
+    def connect(cls, socket_path, log_path=None):
+        proxy = cls(socket_path, 0, log_path)
         status = proxy.request("status")
         if not status.get("running"):
             return None
@@ -76,7 +77,7 @@ class WorkerProcess:
         subprocess.Popen(worker_command, cwd=os.path.abspath(os.curdir), start_new_session=True)
         for _ in range(50):
             time.sleep(0.1)
-            proxy = cls.connect(socket_path)
+            proxy = cls.connect(socket_path, log_path)
             if proxy:
                 return proxy
         raise RuntimeError("Server worker did not start")
@@ -425,7 +426,10 @@ class ServerInstance:
         worker_socket = os.path.join(server_data_obj["path"], ".crafty-worker.sock")
         if os.path.exists(worker_socket):
             try:
-                self.process = WorkerProcess.connect(worker_socket)
+                self.process = WorkerProcess.connect(
+                    worker_socket,
+                    os.path.join(server_data_obj["path"], "logs", "crafty-worker.log"),
+                )
                 if self.process:
                     self.start_time = str(
                         datetime.datetime.now(tz=ZoneInfo("Etc/UTC")).strftime(
@@ -904,7 +908,14 @@ class ServerInstance:
             case "steam_cmd":
                 self.do_steam_server_start(user_id, user_lang)
 
-        logger.debug("Server output is persisted by the worker for server %s", self.server_id)
+        if getattr(self.process, "stdout", None) is not None:
+            out_buf = ServerOutBuf(self.helper, self.process, self.server_id)
+            logger.debug("Starting worker log listener for server %s", self.server_id)
+            threading.Thread(
+                target=out_buf.check,
+                daemon=True,
+                name=f"{self.server_id}_virtual_terminal",
+            ).start()
 
         self.is_crashed = False
         self.stats_helper.server_crash_reset()
