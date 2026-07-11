@@ -2,6 +2,9 @@
 # Crafty Controller 4.10.7
 > Python based Control Panel for your Minecraft Server
 
+## This is a fork
+This repository is a personal fork of [Crafty Controller](https://gitlab.com/crafty-controller/crafty-4), the original upstream project. Please visit the [upstream GitLab repository](https://gitlab.com/crafty-controller/crafty-4) for the official source, documentation, releases, and contribution guidelines.
+
 ## What is Crafty Controller?
 Crafty Controller is a Minecraft Server Control Panel / Launcher. The purpose
 of Crafty Controller is to launch a Minecraft Server in the background and present
