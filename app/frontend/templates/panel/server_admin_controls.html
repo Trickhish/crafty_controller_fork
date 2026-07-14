@@ -146,6 +146,11 @@
       $("#player-health").html(renderPlayerMeter(player.health, "heart", "#dc3545"));
       $("#player-food").html(renderPlayerMeter(player.food, "hamburger", "#f0ad4e"));
       $("#player-position").text(`${player.position.join(", ")} (${player.dimension})`);
+      const skin = $("#player-skin");
+      $("#player-skin-status").text("Loading skin...");
+      skin.show().attr("src", `https://mc-heads.net/body/${encodeURIComponent(player.name)}/128`).off("error").on("error", function () {
+        $(this).hide(); $("#player-skin-status").text("Skin unavailable");
+      }).off("load").on("load", function () { $("#player-skin-status").text(""); });
       const itemsBySlot = Object.fromEntries(player.inventory.map((item) => [item.slot, item]));
       const equipmentBySlot = Object.fromEntries((player.equipment || []).map((item) => [item.slot, item]));
       // Armor is shown top-to-bottom like the game: helmet, chestplate,
