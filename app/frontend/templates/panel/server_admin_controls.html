@@ -119,6 +119,13 @@
     return `${html} <span class="ml-1">${value}/20</span>`;
   }
 
+  function renderInventorySlot(item) {
+    if (!item) return `<div class="minecraft-inventory-slot"></div>`;
+    const itemId = String(item.item || "").split(":").pop();
+    const iconUrl = `https://assets.mcasset.cloud/26.2/assets/minecraft/textures/item/${encodeURIComponent(itemId)}.png`;
+    return `<div class="minecraft-inventory-slot" title="${escapePlayerText(item.item)}"><img src="${iconUrl}" alt="${escapePlayerText(item.item)}" onerror="this.style.display='none'"><span class="item-count">${item.count > 1 ? item.count : ""}</span></div>`;
+  }
+
   async function showPlayerDetails(playerName) {
     $("#player-details-title").text(`Player details - ${playerName}`);
     $("#player-details-status").text("Loading...").removeClass("d-none");
@@ -134,9 +141,10 @@
       $("#player-health").html(renderPlayerMeter(player.health, "heart", "#dc3545"));
       $("#player-food").html(renderPlayerMeter(player.food, "hamburger", "#f0ad4e"));
       $("#player-position").text(`${player.position.join(", ")} (${player.dimension})`);
-      const inventory = $("#player-inventory").empty();
-      if (!player.inventory.length) inventory.append("<li class='list-group-item text-muted'>Empty</li>");
-      player.inventory.forEach((item) => inventory.append(`<li class="list-group-item d-flex justify-content-between"><span><i class="ph-fill ph-cube mr-2"></i>${escapePlayerText(item.item)}</span><span>x${item.count} <small class="text-muted">slot ${item.slot}</small></span></li>`));
+      const itemsBySlot = Object.fromEntries(player.inventory.map((item) => [item.slot, item]));
+      $("#player-equipment-grid").html([36, 37, 38, 39, 40].map((slot) => renderInventorySlot(itemsBySlot[slot])).join(""));
+      $("#player-inventory-grid").html(Array.from({length: 27}, (_, index) => renderInventorySlot(itemsBySlot[index + 9])).join(""));
+      $("#player-hotbar-grid").html(Array.from({length: 9}, (_, index) => renderInventorySlot(itemsBySlot[index])).join(""));
     } catch (error) {
       $("#player-details-status").text(`Unable to load player data: ${error.message || error}`);
     }
