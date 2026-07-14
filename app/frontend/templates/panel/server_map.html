@@ -23,7 +23,7 @@
 </style>
 <script>
   const mapServerId = "{{ data['server_stats']['server_id']['server_id'] }}";
-  const mapPlayerNames = [{% for player in data.get('cached_players', []) %}"{{ player['name'] }}"{% if not loop.last %},{% end %}{% end %}];
+  const mapPlayerNames = [{% for player in data.get('cached_players', []) %}"{{ player['name'] }}",{% end %}];
   const mapOnlineNames = new Set([{% for player in data.get('cached_players', []) %}{% if player['status'] == 'Online' %}"{{ player['name'] }}",{% end %}{% end %}]);
   const mapCanvas = document.getElementById("world-map-canvas");
   const mapContainer = document.getElementById("world-map");
