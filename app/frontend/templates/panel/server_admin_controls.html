@@ -122,8 +122,10 @@
   function renderInventorySlot(item) {
     if (!item) return `<div class="minecraft-inventory-slot"></div>`;
     const itemId = String(item.item || "").split(":").pop();
-    const iconUrl = `https://assets.mcasset.cloud/26.2/assets/minecraft/textures/item/${encodeURIComponent(itemId)}.png`;
-    return `<div class="minecraft-inventory-slot" title="${escapePlayerText(item.item)}"><img src="${iconUrl}" alt="${escapePlayerText(item.item)}" onerror="this.style.display='none'"><span class="item-count">${item.count > 1 ? item.count : ""}</span></div>`;
+    const itemUrl = `/static/assets/minecraft/26.2/textures/item/${encodeURIComponent(itemId)}.png`;
+    const blockUrl = `/static/assets/minecraft/26.2/textures/block/${encodeURIComponent(itemId)}.png`;
+    const fallback = `if (!this.dataset.blockFallback) { this.dataset.blockFallback = '1'; this.src = '${blockUrl}'; } else { this.style.display = 'none'; }`;
+    return `<div class="minecraft-inventory-slot" title="${escapePlayerText(item.item)}"><img src="${itemUrl}" alt="${escapePlayerText(item.item)}" onerror="${fallback}"><span class="item-count">${item.count > 1 ? item.count : ""}</span></div>`;
   }
 
   async function showPlayerDetails(playerName) {

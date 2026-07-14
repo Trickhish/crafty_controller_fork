@@ -15,3 +15,6 @@ __pycache__/
 *.log
 .venv/
 .idea/workspace.xml
+
+# Locally cached Minecraft resource-pack textures (copyrighted game assets)
+app/frontend/static/assets/minecraft/
