@@ -34,23 +34,27 @@ class BlueMapProxyHandler(tornado.web.RequestHandler):
     """Authenticated reverse proxy for a server's local BlueMap webapp."""
 
     async def get(self, server_id, path=""):
-        auth = self.controller.authentication.check(self.get_cookie("token"))
-        if not auth:
-            self.set_status(401)
-            return self.finish("Authentication required")
-        user = auth[2]
-        authorized = self.controller.servers.get_authorized_servers(user["user_id"])
-        if str(server_id) not in {str(server.server_id) for server in authorized}:
-            self.set_status(403)
-            return self.finish("Not authorized")
-        target = f"http://127.0.0.1:8100/{path}"
-        if self.request.query:
-            target += f"?{self.request.query}"
         try:
+            auth = self.controller.authentication.check(self.get_cookie("token"))
+            if not auth:
+                self.set_status(401)
+                return self.finish("Authentication required")
+            user = auth[2]
+            authorized = self.controller.servers.get_authorized_servers(user["user_id"])
+            if str(server_id) not in {str(server.server_id) for server in authorized}:
+                self.set_status(403)
+                return self.finish("Not authorized")
+            target = f"http://127.0.0.1:8100/{path}"
+            if self.request.query:
+                target += f"?{self.request.query}"
             response = await tornado.httpclient.AsyncHTTPClient().fetch(target)
         except tornado.httpclient.HTTPError as error:
             self.set_status(error.response.code if error.response else 502)
             return self.finish("BlueMap is unavailable")
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            logger.exception("BlueMap proxy failed for %s: %s", server_id, error)
+            self.set_status(502)
+            return self.finish("BlueMap proxy error")
         content_type = response.headers.get("Content-Type")
         if content_type:
             self.set_header("Content-Type", content_type)
