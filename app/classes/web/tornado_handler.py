@@ -41,7 +41,9 @@ class BlueMapProxyHandler(BaseHandler):
                 self.set_status(401)
                 return self.finish("Authentication required")
             user = auth[2]
-            authorized = self.controller.servers.get_authorized_servers(user["user_id"])
+            api_key = auth[0]
+            superuser = bool(user.get("superuser")) and (api_key is None or api_key.full_access)
+            authorized = self.controller.servers.list_defined_servers() if superuser else self.controller.servers.get_authorized_servers(user["user_id"])
             if str(server_id) not in {str(server.server_id) for server in authorized}:
                 self.set_status(403)
                 return self.finish("Not authorized")
