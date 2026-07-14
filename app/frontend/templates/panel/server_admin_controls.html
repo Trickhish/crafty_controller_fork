@@ -165,11 +165,12 @@
 
   let activeActionPlayer = "";
 
-  async function showPlayerActions(playerName) {
+  async function showPlayerActions(playerName, isOnline) {
     activeActionPlayer = playerName;
     $("#player-actions-title").text(`Actions - ${playerName}`);
     $("#player-actions-status").text("Loading...").removeClass("d-none");
     $("#player-action-buttons").addClass("d-none");
+    $(".player-action-kick").toggle(Boolean(isOnline));
     $("#player-actions-modal").modal("show");
     try {
       const response = await fetch(`/api/v2/servers/${serverId}/players/${encodeURIComponent(playerName)}`);
@@ -186,7 +187,7 @@
   }
 
   $(document).on("click", ".player-details", function () { showPlayerDetails($(this).data("player-name")); });
-  $(document).on("click", ".player-actions", function () { showPlayerActions($(this).data("player-name")); });
+  $(document).on("click", ".player-actions", function () { showPlayerActions($(this).data("player-name"), $(this).attr("data-player-online") === "true"); });
   $(document).on("click", ".player-action-ban", function () { send_command_to_server(`ban ${activeActionPlayer}`); $("#player-actions-modal").modal("hide"); });
   $(document).on("click", ".player-action-kick", function () { send_command_to_server(`kick ${activeActionPlayer}`); $("#player-actions-modal").modal("hide"); });
   $(document).on("click", ".player-action-op", function () { send_command_to_server($(this).data("command")); $("#player-actions-modal").modal("hide"); });

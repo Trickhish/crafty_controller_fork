@@ -36,7 +36,7 @@
                     <td class="no-scroll col-3">
                         {% if data['server_stats']['running'] %}
                         <div class="row">
-                            <div class="col"><button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}"><i class="ph ph-list"></i> Actions</button></div>
+                            <div class="col"><button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}" data-player-online="true"><i class="ph ph-list"></i> Actions</button></div>
                         </div>
                         {% else %}
                         <span> Unavailable <br>(Server Offline)</span>
@@ -55,7 +55,7 @@
             <tbody id="offline-player-body">
                 {% for player in data['cached_players'] %}
                 {% if player['status'] == 'Offline' %}
-                <tr class="playerItem-- text-center"><td><button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button></td><td><span class="text-warning"><i class="ph ph-x-circle"></i> Last connection: {{ player['last_seen'] }}</span></td><td>{% if data['server_stats']['running'] %}<button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}"><i class="ph ph-list"></i> Actions</button>{% else %}<span>Unavailable</span>{% end %}</td></tr>
+                <tr class="playerItem-- text-center"><td><button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button></td><td><span class="text-warning"><i class="ph ph-x-circle"></i> Last connection: {{ player['last_seen'] }}</span></td><td>{% if data['server_stats']['running'] %}<button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}" data-player-online="false"><i class="ph ph-list"></i> Actions</button>{% else %}<span>Unavailable</span>{% end %}</td></tr>
                 {% end %}
                 {% end %}
             </tbody></table>

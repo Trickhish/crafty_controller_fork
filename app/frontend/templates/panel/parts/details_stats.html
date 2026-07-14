@@ -239,7 +239,7 @@
         rows[key] += `<td class="col-4"><span class="text-warning"><i class="ph-fill ph-x-circle"></i><span class="offline-status">&nbsp;${players[i]['status']}</span><span class="conn-break"> Last connection :<br> ${players[i]['last_seen']}</span></td>`
       }
       if (server["running"]) {
-        rows[key] += `<td class="col-3"><button type="button" class="btn btn-outline-primary player-actions" data-player-name="${players[i]['name']}"><i class="ph ph-list"></i> Actions</button></td>`
+        rows[key] += `<td class="col-3"><button type="button" class="btn btn-outline-primary player-actions" data-player-name="${players[i]['name']}" data-player-online="${players[i]['status'] === "Online"}"><i class="ph ph-list"></i> Actions</button></td>`
       } else {
         rows[key] += `<td><div><span> Unavailable<br> (Server Offline)</span></div></td>`
       }
