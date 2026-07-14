@@ -26,11 +26,12 @@ from app.classes.web.server_handler import ServerHandler
 from app.classes.web.websocket_handler import WebSocketHandler
 from app.classes.web.static_handler import CustomStaticHandler
 from app.classes.web.status_handler import StatusHandler
+from app.classes.web.base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
 
 
-class BlueMapProxyHandler(tornado.web.RequestHandler):
+class BlueMapProxyHandler(BaseHandler):
     """Authenticated reverse proxy for a server's local BlueMap webapp."""
 
     async def get(self, server_id, path=""):
