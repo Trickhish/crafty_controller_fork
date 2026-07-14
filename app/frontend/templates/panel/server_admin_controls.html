@@ -147,7 +147,8 @@
       $("#player-food").html(renderPlayerMeter(player.food, "hamburger", "#f0ad4e"));
       $("#player-position").text(`${player.position.join(", ")} (${player.dimension})`);
       const itemsBySlot = Object.fromEntries(player.inventory.map((item) => [item.slot, item]));
-      $("#player-equipment-grid").html([36, 37, 38, 39, 40].map((slot) => renderInventorySlot(itemsBySlot[slot])).join(""));
+      const equipmentBySlot = Object.fromEntries((player.equipment || []).map((item) => [item.slot, item]));
+      $("#player-equipment-grid").html([36, 37, 38, 39, 40].map((slot) => renderInventorySlot(equipmentBySlot[slot] || itemsBySlot[slot])).join(""));
       $("#player-inventory-grid").html(Array.from({length: 27}, (_, index) => renderInventorySlot(itemsBySlot[index + 9])).join(""));
       $("#player-hotbar-grid").html(Array.from({length: 9}, (_, index) => renderInventorySlot(itemsBySlot[index])).join(""));
     } catch (error) {

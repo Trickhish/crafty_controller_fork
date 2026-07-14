@@ -41,6 +41,16 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
                     "item": str(item.get("id", "unknown")),
                     "count": int(item.get("count", item.get("Count", 1))),
                 })
+            equipment = []
+            equipment_slots = {"feet": 36, "legs": 37, "chest": 38, "head": 39, "offhand": 40}
+            for name, slot in equipment_slots.items():
+                item = data.get("equipment", {}).get(name)
+                if item and item.get("id"):
+                    equipment.append({
+                        "slot": slot,
+                        "item": str(item.get("id")),
+                        "count": int(item.get("count", item.get("Count", 1))),
+                    })
             position = [round(float(value), 2) for value in data.get("Pos", [])]
             result = {
                 "name": player_name,
@@ -49,6 +59,7 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
                 "position": position,
                 "dimension": str(data.get("Dimension", "minecraft:overworld")),
                 "inventory": inventory,
+                "equipment": equipment,
                 "last_death": data.get("LastDeathLocation"),
             }
             if result["last_death"]:
