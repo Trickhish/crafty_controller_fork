@@ -77,16 +77,17 @@
         <div class="modal-body"><div id="player-details-status" class="text-muted">Loading...</div><div id="player-details-content" class="d-none">
             <div class="row mb-3"><div class="col-md-3"><strong><i class="ph-fill ph-heart text-danger"></i> Health</strong><br><span id="player-health"></span></div><div class="col-md-3"><strong><i class="ph-fill ph-hamburger text-warning"></i> Food</strong><br><span id="player-food"></span></div><div class="col-md-6"><strong><i class="ph-fill ph-map-pin"></i> Last coordinates</strong><br><span id="player-position"></span></div></div>
             <h6><i class="ph-fill ph-backpack"></i> Inventory</h6>
-            <div id="player-equipment-grid" class="minecraft-inventory-grid equipment-grid mb-2"></div>
-            <div id="player-inventory-grid" class="minecraft-inventory-grid"></div>
-            <div class="minecraft-inventory-separator"></div>
-            <div id="player-hotbar-grid" class="minecraft-inventory-grid"></div>
+            <div class="minecraft-inventory-layout">
+                <div><div id="player-inventory-grid" class="minecraft-inventory-grid"></div><div class="minecraft-inventory-separator"></div><div id="player-hotbar-grid" class="minecraft-inventory-grid"></div></div>
+                <div id="player-equipment-grid" class="minecraft-inventory-grid equipment-grid"></div>
+            </div>
         </div></div>
     </div></div>
 </div>
 <style>
     .minecraft-inventory-grid { display: grid; grid-template-columns: repeat(9, minmax(34px, 52px)); gap: 3px; padding: 6px; width: fit-content; max-width: 100%; background: #c6c6c6; border: 2px solid #373737; box-shadow: inset 2px 2px #fff, inset -2px -2px #555; }
-    .equipment-grid { grid-template-columns: repeat(4, minmax(34px, 52px)); }
+    .minecraft-inventory-layout { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; overflow-x: auto; }
+    .equipment-grid { grid-template-columns: minmax(34px, 52px); grid-template-rows: repeat(5, minmax(34px, 52px)); }
     .minecraft-inventory-slot { position: relative; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #8b8b8b; border: 2px solid #373737; box-shadow: inset 2px 2px #555, inset -2px -2px #fff; image-rendering: pixelated; }
     .minecraft-inventory-slot img { width: 82%; height: 82%; object-fit: contain; image-rendering: pixelated; }
     .minecraft-inventory-slot .item-count { position: absolute; right: 2px; bottom: 0; color: #fff; font-weight: bold; text-shadow: 2px 2px #333; }
