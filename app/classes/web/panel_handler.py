@@ -5,6 +5,7 @@ import datetime
 import os
 import typing as t
 import json
+import re
 import zipfile
 import logging
 from pathlib import Path
@@ -724,6 +725,13 @@ class PanelHandler(BaseHandler):
                                         plugin["version"] = str(metadata.get("version") or "Unknown")
                         except (OSError, KeyError, zipfile.BadZipFile, yaml.YAMLError):
                             logger.warning("Unable to read plugin metadata from %s", item)
+                        # Some plugins publish a JAR whose embedded version is stale
+                        # (EasyMOTD 1.2 currently still declares 1.1 in plugin.yml).
+                        # Prefer a clear semantic version in the release filename when
+                        # one is available, while retaining metadata as the fallback.
+                        filename_version = re.search(r"(?<!\d)(\d+(?:\.\d+)+(?:[-+][A-Za-z0-9.-]+)?)", item.stem)
+                        if filename_version:
+                            plugin["version"] = filename_version.group(1)
                         page_data["plugins"].append(plugin)
                 except OSError:
                     logger.exception("Unable to list plugins in %s", plugins_dir)
