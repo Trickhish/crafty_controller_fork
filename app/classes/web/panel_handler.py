@@ -987,10 +987,6 @@ class PanelHandler(BaseHandler):
                     )
                     player["banned_on"] = (temp_date).strftime("%Y/%m/%d %H:%M:%S")
 
-            if subpage == "map":
-                server_instance = self.controller.servers.get_server_instance_by_id(server_id)
-                page_data["cached_players"] = server_instance.player_cache
-
             template = f"panel/server_{subpage}.html"
 
         elif page == "panel_config":
