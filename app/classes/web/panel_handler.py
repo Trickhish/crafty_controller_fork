@@ -957,6 +957,10 @@ class PanelHandler(BaseHandler):
                     server_id
                 )
                 page_data["cached_players"] = server_instance.player_cache
+                page_data["online_players"] = [
+                    player for player in page_data["cached_players"]
+                    if player.get("status") == "Online"
+                ]
 
                 for player in page_data["banned_players"]:
                     player["banned"] = True

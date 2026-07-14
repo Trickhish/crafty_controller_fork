@@ -224,6 +224,17 @@
     initParser('input_motd', 'input_motd');
     let text = ""
     let players = server.players_cache;
+    let onlinePlayers = players.filter((player) => player["status"] === "Online");
+    const onlineCount = document.getElementById("online-player-count");
+    const onlineList = document.getElementById("online-player-list");
+    const allCount = document.getElementById("all-player-count");
+    if (onlineCount) onlineCount.textContent = onlinePlayers.length;
+    if (allCount) allCount.textContent = players.length;
+    if (onlineList) {
+      onlineList.innerHTML = onlinePlayers.length
+        ? onlinePlayers.map((player) => `<span class="badge badge-light mr-1">${player["name"]}</span>`).join("")
+        : "No players online.";
+    }
     for (let i = 0; i < players.length; i++) {
       text += `<tr id="playerItem-${players[i]["name"]}" class="playerItem-- text-center">`;
       text += `<td class="no-scroll col-5"><strong>${players[i]["name"]}</strong></td>`;

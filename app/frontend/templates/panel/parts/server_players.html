@@ -1,6 +1,21 @@
 <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12">
     <h2>{{ translate('serverPlayerManagement', 'players', data['lang']) }}:</h2>
-    <div class="table-responsive ">
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Online players</strong>
+                <span class="badge badge-success" id="online-player-count">{{ len(data['online_players']) }}</span>
+            </div>
+            <div id="online-player-list" class="text-muted">
+                {% if data['online_players'] %}
+                {% for player in data['online_players'] %}<span class="badge badge-light mr-1">{{ player['name'] }}</span>{% end %}
+                {% else %}No players online.{% end %}
+            </div>
+        </div>
+    </div>
+    <details class="mb-3">
+        <summary class="btn btn-outline-secondary">All players (<span id="all-player-count">{{ len(data['cached_players']) }}</span>)</summary>
+    <div class="table-responsive mt-3">
         <table class="table no-scroll">
             <thead class="thead">
                 <tr>
@@ -47,6 +62,7 @@
             </tbody>
         </table>
     </div>
+    </details>
 </div>
 <div class="col-xl-6 col-lg-12 no-scroll">
     <h2>{{ translate('serverPlayerManagement', 'bannedPlayers', data['lang']) }}:</h2>
