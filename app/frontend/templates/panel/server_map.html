@@ -30,6 +30,7 @@
   const mapContext = mapCanvas.getContext("2d");
   const mapPlayers = [];
   const mapView = { zoom: 1, x: 0, z: 0, dragging: false, lastX: 0, lastY: 0 };
+  const terrainTextures = ["grass_block_top", "dirt", "stone", "sand", "water_still"].map((name) => { const image = new Image(); image.src = `/static/assets/minecraft/26.2/textures/block/${name}.png`; return image; });
   let selectedDimension = "all";
   function resizeMap() { const ratio = window.devicePixelRatio || 1; mapCanvas.width = mapCanvas.clientWidth * ratio; mapCanvas.height = mapCanvas.clientHeight * ratio; mapContext.setTransform(ratio, 0, 0, ratio, 0, 0); drawMap(); }
   function worldToCanvas(x, z) { const scale = Math.max(0.08, mapView.zoom); return [mapCanvas.clientWidth / 2 + (x - mapView.x) * scale, mapCanvas.clientHeight / 2 + (z - mapView.z) * scale]; }
@@ -38,6 +39,17 @@
     mapContext.clearRect(0, 0, width, height); mapContext.fillStyle = "#10151b"; mapContext.fillRect(0, 0, width, height);
     const scale = Math.max(0.08, mapView.zoom); const grid = scale > 0.45 ? 100 : scale > 0.18 ? 500 : 1000;
     const left = mapView.x - width / 2 / scale, right = mapView.x + width / 2 / scale, top = mapView.z - height / 2 / scale, bottom = mapView.z + height / 2 / scale;
+    // Paint a Minecraft resource-pack terrain surface behind the coordinate grid.
+    // The texture is visual context; player positions remain authoritative.
+    if (scale > 0.22) {
+      const cell = 16, firstX = Math.floor(left / cell) * cell, firstZ = Math.floor(top / cell) * cell;
+      for (let x = firstX; x <= right; x += cell) for (let z = firstZ; z <= bottom; z += cell) {
+        const [px, py] = worldToCanvas(x, z), [nx, ny] = worldToCanvas(x + cell, z + cell);
+        const texture = terrainTextures[(Math.abs((x / cell) * 31 + (z / cell) * 17) | 0) % terrainTextures.length];
+        if (texture.complete) mapContext.globalAlpha = 0.38, mapContext.drawImage(texture, px, py, nx - px + 1, ny - py + 1);
+      }
+      mapContext.globalAlpha = 1;
+    }
     mapContext.strokeStyle = "#27313a"; mapContext.fillStyle = "#78838d"; mapContext.font = "11px sans-serif"; mapContext.lineWidth = 1;
     for (let x = Math.floor(left / grid) * grid; x <= right; x += grid) { const [px] = worldToCanvas(x, 0); mapContext.beginPath(); mapContext.moveTo(px, 0); mapContext.lineTo(px, height); mapContext.stroke(); if (px > 25) mapContext.fillText(String(x), px + 3, height - 6); }
     for (let z = Math.floor(top / grid) * grid; z <= bottom; z += grid) { const [, py] = worldToCanvas(0, z); mapContext.beginPath(); mapContext.moveTo(0, py); mapContext.lineTo(width, py); mapContext.stroke(); if (py > 14) mapContext.fillText(String(z), 4, py - 3); }
