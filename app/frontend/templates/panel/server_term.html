@@ -174,14 +174,16 @@
   let stopBtn = document.querySelector('#stop-btn');
 
   //{% if data['permissions']['Commands'] in data['user_permissions'] %}
-  if (online) {
-    startBtn.setAttribute('disabled', 'disabled');
-    restartBtn.removeAttribute('disabled');
-    stopBtn.removeAttribute('disabled');
-  } else {
-    startBtn.removeAttribute('disabled');
-    restartBtn.setAttribute('disabled', 'disabled');
-    stopBtn.setAttribute('disabled', 'disabled');
+  if (startBtn && restartBtn && stopBtn) {
+    if (online) {
+      startBtn.setAttribute('disabled', 'disabled');
+      restartBtn.removeAttribute('disabled');
+      stopBtn.removeAttribute('disabled');
+    } else {
+      startBtn.removeAttribute('disabled');
+      restartBtn.setAttribute('disabled', 'disabled');
+      stopBtn.setAttribute('disabled', 'disabled');
+    }
   }
 
   if (webSocket) {
@@ -192,6 +194,7 @@
   //{% end %}
 
   async function get_server_log() {
+    try {
     const token = getCookie("_xsrf")
     let colors = true;
     let res = await fetch(`/api/v2/servers/${serverId}/logs?colors=${colors}`, {
@@ -216,6 +219,11 @@
         message: responseData.error_data
       });
     }
+    if (!res.ok) throw new Error(`Log request failed (${res.status})`);
+    }
+  } catch (error) {
+    console.warn('Unable to load server log:', error);
+    setTimeout(get_server_log, 2000);
   }
 
 
@@ -240,10 +248,20 @@
 
   $(document).ready(function () {
     console.log("ready!");
-    get_server_log()
-
-    webSocket.on('vterm_new_line', new_line_handler)
+    get_server_log();
+    registerTerminalWebSocket();
   });
+
+  let terminalWebSocketRegistered = false;
+  function registerTerminalWebSocket(attempt = 0) {
+    if (terminalWebSocketRegistered) return;
+    if (webSocket) {
+      webSocket.on('vterm_new_line', new_line_handler);
+      terminalWebSocketRegistered = true;
+      return;
+    }
+    if (attempt < 20) setTimeout(() => registerTerminalWebSocket(attempt + 1), 250);
+  }
 
   $('#server_command').on('keydown', function (e) {
     if (e.which == 13) {
