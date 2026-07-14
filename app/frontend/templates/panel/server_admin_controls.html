@@ -122,7 +122,7 @@
   function renderInventorySlot(item) {
     if (!item) return `<div class="minecraft-inventory-slot"></div>`;
     const itemId = String(item.item || "").split(":").pop();
-    const inventoryIconItems = new Set(["cobblestone", "dirt", "torch", "cactus"]);
+    const inventoryIconItems = new Set(["cobblestone", "dirt", "torch", "cactus", "shield"]);
     const itemUrl = inventoryIconItems.has(itemId)
       ? `/static/assets/minecraft/26.2/textures/item/invicon/${encodeURIComponent(itemId)}.png`
       : `/static/assets/minecraft/26.2/textures/item/${encodeURIComponent(itemId)}.png`;
