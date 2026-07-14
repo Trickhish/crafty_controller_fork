@@ -6,6 +6,10 @@
   <div class="row"><div class="col-12 grid-margin"><div class="card"><div class="card-body">
     <span class="d-none d-sm-block">{% include "parts/server_controls_list.html" %}</span>
     <span class="d-block d-sm-none">{% include "parts/m_server_controls_list.html" %}</span>
+    <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap" style="gap:10px">
+      <span><strong>Rendered world map</strong><br><small>BlueMap is rendering the actual world with conservative settings. The first render may take a while.</small></span>
+      <a id="bluemap-link" class="btn btn-primary" target="_blank" rel="noopener">Open BlueMap</a>
+    </div>
     <div class="d-flex align-items-center flex-wrap mb-3" style="gap:8px">
       <label class="mb-0" for="map-dimension">Dimension</label>
       <select id="map-dimension" class="form-control" style="max-width:240px"><option value="all">All dimensions</option></select>
@@ -23,6 +27,7 @@
 </style>
 <script>
   const mapServerId = "{{ data['server_stats']['server_id']['server_id'] }}";
+  document.getElementById("bluemap-link").href = `${window.location.protocol}//${window.location.hostname}:8100/`;
   const mapPlayerNames = [{% for player in data.get('cached_players', []) %}"{{ player['name'] }}",{% end %}];
   const mapOnlineNames = new Set([{% for player in data.get('cached_players', []) %}{% if player['status'] == 'Online' %}"{{ player['name'] }}",{% end %}{% end %}]);
   const mapCanvas = document.getElementById("world-map-canvas");
