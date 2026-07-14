@@ -63,6 +63,7 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
 
     @staticmethod
     def _find_player_file(server_path: Path, player_name: str):
+        matches = []
         for root in (server_path / "world" / "players" / "data", server_path / "world" / "playerdata"):
             if not root.is_dir():
                 continue
@@ -71,7 +72,9 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
                     data = load(path)
                     known_name = str(data.get("bukkit", {}).get("lastKnownName", ""))
                     if known_name.casefold() == player_name.casefold():
-                        return path
+                        # Offline-mode servers can have more than one UUID file
+                        # for the same name. The newest file is the active one.
+                        matches.append(path)
                 except (OSError, ValueError, TypeError):
                     continue
-        return None
+        return max(matches, key=lambda path: path.stat().st_mtime, default=None)
