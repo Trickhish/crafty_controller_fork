@@ -1,0 +1,56 @@
+{% extends ../base.html %}
+{% block title %}Crafty Controller - World map{% end %}
+{% block content %}
+<div class="content-wrapper">
+  <div class="row page-title-header"><div class="col-12"><div class="page-header"><h4 class="page-title">World map - {{ data['server_stats']['server_id']['server_name'] }}</h4></div></div></div>
+  <div class="row"><div class="col-12 grid-margin"><div class="card"><div class="card-body">
+    <span class="d-none d-sm-block">{% include "parts/server_controls_list.html" %}</span>
+    <span class="d-block d-sm-none">{% include "parts/m_server_controls_list.html" %}</span>
+    <div class="d-flex align-items-center flex-wrap mb-3" style="gap:8px">
+      <label class="mb-0" for="map-dimension">Dimension</label>
+      <select id="map-dimension" class="form-control" style="max-width:240px"><option value="all">All dimensions</option></select>
+      <button id="map-reset" type="button" class="btn btn-outline-secondary">Reset view</button>
+      <span id="map-status" class="text-muted small">Loading player positions...</span>
+    </div>
+    <div id="world-map" class="world-map"><canvas id="world-map-canvas"></canvas></div>
+    <p class="text-muted small mt-2 mb-0">Scroll to zoom and drag to pan. Coordinates use X/Z, with north/south represented by the Z axis.</p>
+  </div></div></div>
+</div>
+<style>
+  .world-map { height: min(70vh, 680px); min-height: 360px; background:#10151b; border:1px solid #39434d; border-radius:4px; overflow:hidden; cursor:grab; }
+  .world-map.dragging { cursor:grabbing; }
+  #world-map-canvas { width:100%; height:100%; display:block; }
+</style>
+<script>
+  const mapServerId = "{{ data['server_stats']['server_id']['server_id'] }}";
+  const mapPlayerNames = [{% for player in data.get('cached_players', []) %}"{{ player['name'] }}"{% if not loop.last %},{% end %}{% end %}];
+  const mapOnlineNames = new Set([{% for player in data.get('cached_players', []) %}{% if player['status'] == 'Online' %}"{{ player['name'] }}",{% end %}{% end %}]);
+  const mapCanvas = document.getElementById("world-map-canvas");
+  const mapContainer = document.getElementById("world-map");
+  const mapContext = mapCanvas.getContext("2d");
+  const mapPlayers = [];
+  const mapView = { zoom: 1, x: 0, z: 0, dragging: false, lastX: 0, lastY: 0 };
+  let selectedDimension = "all";
+  function resizeMap() { const ratio = window.devicePixelRatio || 1; mapCanvas.width = mapCanvas.clientWidth * ratio; mapCanvas.height = mapCanvas.clientHeight * ratio; mapContext.setTransform(ratio, 0, 0, ratio, 0, 0); drawMap(); }
+  function worldToCanvas(x, z) { const scale = Math.max(0.08, mapView.zoom); return [mapCanvas.clientWidth / 2 + (x - mapView.x) * scale, mapCanvas.clientHeight / 2 + (z - mapView.z) * scale]; }
+  function drawMap() {
+    const width = mapCanvas.clientWidth, height = mapCanvas.clientHeight;
+    mapContext.clearRect(0, 0, width, height); mapContext.fillStyle = "#10151b"; mapContext.fillRect(0, 0, width, height);
+    const scale = Math.max(0.08, mapView.zoom); const grid = scale > 0.45 ? 100 : scale > 0.18 ? 500 : 1000;
+    const left = mapView.x - width / 2 / scale, right = mapView.x + width / 2 / scale, top = mapView.z - height / 2 / scale, bottom = mapView.z + height / 2 / scale;
+    mapContext.strokeStyle = "#27313a"; mapContext.fillStyle = "#78838d"; mapContext.font = "11px sans-serif"; mapContext.lineWidth = 1;
+    for (let x = Math.floor(left / grid) * grid; x <= right; x += grid) { const [px] = worldToCanvas(x, 0); mapContext.beginPath(); mapContext.moveTo(px, 0); mapContext.lineTo(px, height); mapContext.stroke(); if (px > 25) mapContext.fillText(String(x), px + 3, height - 6); }
+    for (let z = Math.floor(top / grid) * grid; z <= bottom; z += grid) { const [, py] = worldToCanvas(0, z); mapContext.beginPath(); mapContext.moveTo(0, py); mapContext.lineTo(width, py); mapContext.stroke(); if (py > 14) mapContext.fillText(String(z), 4, py - 3); }
+    const [originX, originZ] = worldToCanvas(0, 0); mapContext.strokeStyle = "#d5a83c"; mapContext.beginPath(); mapContext.moveTo(originX, 0); mapContext.lineTo(originX, height); mapContext.moveTo(0, originZ); mapContext.lineTo(width, originZ); mapContext.stroke();
+    mapPlayers.filter((player) => selectedDimension === "all" || player.dimension === selectedDimension).forEach((player) => { const [px, py] = worldToCanvas(player.position[0], player.position[2]); if (px < -30 || py < -30 || px > width + 30 || py > height + 30) return; mapContext.fillStyle = player.online ? "#48d597" : "#a3adb5"; mapContext.beginPath(); mapContext.arc(px, py, 6, 0, Math.PI * 2); mapContext.fill(); mapContext.strokeStyle = "#0b0e11"; mapContext.stroke(); mapContext.fillStyle = "#f1f3f5"; mapContext.fillText(`${player.name} (${Math.round(player.position[0])}, ${Math.round(player.position[2])})`, px + 9, py - 8); });
+  }
+  async function loadMapPlayers() { const status = document.getElementById("map-status"); const results = await Promise.all(mapPlayerNames.map(async (name) => { try { const response = await fetch(`/api/v2/servers/${mapServerId}/players/${encodeURIComponent(name)}`); const result = await response.json(); if (result.status !== "ok" || !result.data.position || result.data.position.length < 3) return null; return { ...result.data, online: mapOnlineNames.has(name) }; } catch (_) { return null; } })); mapPlayers.splice(0, mapPlayers.length, ...results.filter(Boolean)); const dimensions = [...new Set(mapPlayers.map((player) => player.dimension))]; const select = document.getElementById("map-dimension"); dimensions.forEach((dimension) => { const option = document.createElement("option"); option.value = dimension; option.textContent = dimension; select.appendChild(option); }); status.textContent = `${mapPlayers.length} player position(s) loaded`; drawMap(); }
+  document.getElementById("map-dimension").addEventListener("change", (event) => { selectedDimension = event.target.value; drawMap(); });
+  document.getElementById("map-reset").addEventListener("click", () => { mapView.zoom = 1; mapView.x = 0; mapView.z = 0; drawMap(); });
+  mapContainer.addEventListener("wheel", (event) => { event.preventDefault(); const old = mapView.zoom; mapView.zoom = Math.max(0.08, Math.min(8, old * (event.deltaY < 0 ? 1.2 : 0.83))); drawMap(); }, { passive: false });
+  mapContainer.addEventListener("pointerdown", (event) => { mapView.dragging = true; mapView.lastX = event.clientX; mapView.lastY = event.clientY; mapContainer.classList.add("dragging"); });
+  window.addEventListener("pointerup", () => { mapView.dragging = false; mapContainer.classList.remove("dragging"); });
+  window.addEventListener("pointermove", (event) => { if (!mapView.dragging) return; mapView.x -= (event.clientX - mapView.lastX) / mapView.zoom; mapView.z -= (event.clientY - mapView.lastY) / mapView.zoom; mapView.lastX = event.clientX; mapView.lastY = event.clientY; drawMap(); });
+  window.addEventListener("resize", resizeMap); resizeMap(); loadMapPlayers(); setInterval(loadMapPlayers, 10000);
+</script>
+{% end %}

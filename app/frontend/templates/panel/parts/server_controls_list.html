@@ -51,6 +51,10 @@
     {% end %}
     {% if data['permissions']['Players'] in data['user_permissions'] and data['server_data']['type'] != 'minecraft-bedrock' %}
     <li class="nav-item term-nav-item">
+        <a class="nav-link {% if data['active_link'] == 'map' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=map" role="tab" aria-selected="false">
+            <i class="ph-fill ph-map-trifold"></i>Map</a>
+    </li>
+    <li class="nav-item term-nav-item">
         <a class="nav-link {% if data['active_link'] == 'admin_controls' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=admin_controls" role="tab" aria-selected="true">
             <i class="ph-fill ph-users"></i>{{ translate('serverDetails', 'playerControls', data['lang']) }}</a>
     </li>

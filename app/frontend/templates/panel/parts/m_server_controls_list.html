@@ -31,6 +31,7 @@
             <a class="dropdown-item {% if data['active_link'] == 'config' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=config" role="tab" aria-selected="true"><i class="ph-fill ph-gear"></i> {{ translate('serverDetails', 'config', data['lang']) }}</a>
             {% end %}
             {% if data['permissions']['Players'] in data['user_permissions'] and data['server_data']['type'] != 'minecraft-bedrock' %}
+            <a class="dropdown-item {% if data['active_link'] == 'map' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=map" role="tab" aria-selected="false"><i class="ph-fill ph-map-trifold"></i> Map</a>
             <a class="dropdown-item {% if data['active_link'] == 'admin_controls' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=admin_controls" role="tab" aria-selected="true"><i class="ph-fill ph-users"></i> {{ translate('serverDetails', 'playerControls', data['lang']) }}</a>
             {% end %}
             <a class="dropdown-item {% if data['active_link'] == 'metrics' %}active{% end %}" href="/panel/server_detail?id={{ data['server_stats']['server_id']['server_id'] }}&subpage=metrics" role="tab" aria-selected="true"><i class="ph ph-chart-line"></i> {{ translate('serverDetails', 'metrics', data['lang']) }}</a>

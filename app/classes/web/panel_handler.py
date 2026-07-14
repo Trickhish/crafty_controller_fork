@@ -42,6 +42,7 @@ SUBPAGE_PERMS = {
     "plugins": EnumPermissionsServer.FILES,
     "config": EnumPermissionsServer.CONFIG,
     "admin_controls": EnumPermissionsServer.PLAYERS,
+    "map": EnumPermissionsServer.PLAYERS,
     "metrics": EnumPermissionsServer.LOGS,
     "webhooks": EnumPermissionsServer.CONFIG,
     "update_center": EnumPermissionsServer.CONFIG,
@@ -985,6 +986,10 @@ class PanelHandler(BaseHandler):
                         player["created"], "%Y-%m-%d %H:%M:%S %z"
                     )
                     player["banned_on"] = (temp_date).strftime("%Y/%m/%d %H:%M:%S")
+
+            if subpage == "map":
+                server_instance = self.controller.servers.get_server_instance_by_id(server_id)
+                page_data["cached_players"] = server_instance.player_cache
 
             template = f"panel/server_{subpage}.html"
 
