@@ -44,6 +44,13 @@
     </div></div>
   </div></div>
 </div>
+<div class="modal fade" id="plugin-restart-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Restart server?</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>
+    <div class="modal-body"><p id="plugin-restart-message">The plugin change is ready. Restart the server now to apply it.</p></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" id="plugin-restart-later" data-dismiss="modal">Later</button><button type="button" class="btn btn-primary" id="plugin-restart-now">Restart now</button></div>
+  </div></div>
+</div>
 <script>
   const serverId = "{{ data['server_stats']['server_id']['server_id'] }}";
   const serverVersion = "{{ data['server_stats'].get('version', '') }}";
@@ -77,6 +84,25 @@
     });
     if (!response.ok) throw new Error((await response.text()) || "Remove failed");
   }
+  function askPluginRestart(message) {
+    $("#plugin-restart-message").text(message || "The plugin change is ready. Restart the server now to apply it.");
+    $("#plugin-restart-modal").modal("show");
+  }
+  $("#plugin-restart-now").on("click", async () => {
+    const button = $("#plugin-restart-now");
+    button.prop("disabled", true).text("Restarting...");
+    try {
+      const response = await fetch(`/api/v2/servers/${serverId}/action/restart_server`, { method: "POST", headers: { "token": getCookie("_xsrf") } });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error_data || result.error || "Restart failed");
+      $("#plugin-restart-modal").modal("hide");
+      setTimeout(() => location.reload(), 1000);
+    } catch (error) {
+      button.prop("disabled", false).text("Restart now");
+      $("#plugin-restart-message").text(`Restart failed: ${error.message || error}`);
+    }
+  });
+  $("#plugin-restart-later").on("click", () => setTimeout(() => location.reload(), 300));
   async function latestPluginRelease(projectId) {
     const versions = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(projectId)}/version?loaders=%5B%22paper%22%5D`).then((response) => {
       if (!response.ok) throw new Error("Plugin is unavailable on Modrinth");
@@ -120,8 +146,8 @@
         await removePlugin(row.dataset.pluginFile);
         const blob = await fetch(file.url).then((response) => response.blob());
         await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
-        status.textContent = "Updated. Restart Minecraft to load it.";
-        setTimeout(() => location.reload(), 1200);
+        status.textContent = "Updated.";
+        askPluginRestart("The plugin was updated. Restart the server now to load the new version?");
       } catch (error) { status.textContent = `Update failed: ${error.message || error}`; update.disabled = false; }
     });
     row.querySelector(".remove-plugin").addEventListener("click", async () => {
@@ -140,8 +166,8 @@
     status.textContent = "Uploading...";
     try {
       await uploadPlugin(file);
-      status.textContent = "Plugin uploaded. Restart the Minecraft server to load it.";
-      setTimeout(() => location.reload(), 1000);
+      status.textContent = "Plugin uploaded.";
+      askPluginRestart("The plugin was installed. Restart the server now to load it?");
     } catch (error) { status.textContent = "Upload failed: " + error; }
   });
   const libraryPlugins = [
@@ -174,8 +200,8 @@
         const blob = await fetch(file.url).then((response) => response.blob());
         status.textContent = "Installing...";
         await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
-        status.textContent = "Installed. Restart Minecraft to load it.";
-        setTimeout(() => location.reload(), 1200);
+        status.textContent = "Installed.";
+        askPluginRestart("The plugin was installed. Restart the server now to load it?");
       } catch (error) { status.textContent = "Installation failed: " + error; }
     });
     target.appendChild(card);
