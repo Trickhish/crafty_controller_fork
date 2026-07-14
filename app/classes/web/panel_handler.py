@@ -5,12 +5,14 @@ import datetime
 import os
 import typing as t
 import json
+import zipfile
 import logging
 from pathlib import Path
 from zoneinfo import ZoneInfoNotFoundError
 import httpx
 import aiofiles
 import nh3
+import yaml
 import tornado.web
 
 # TZLocal is set as a hidden import on win pipeline
@@ -710,12 +712,19 @@ class PanelHandler(BaseHandler):
                 page_data["plugins"] = []
                 try:
                     plugins_dir.mkdir(parents=True, exist_ok=True)
-                    page_data["plugins"] = [
-                        {"name": item.name, "size": item.stat().st_size}
-                        for item in sorted(
-                            plugins_dir.glob("*.jar"), key=lambda path: path.name.casefold()
-                        )
-                    ]
+                    for item in sorted(plugins_dir.glob("*.jar"), key=lambda path: path.name.casefold()):
+                        plugin = {"name": item.name, "filename": item.name, "size": item.stat().st_size, "version": "Unknown"}
+                        try:
+                            with zipfile.ZipFile(item) as archive:
+                                descriptor = next((name for name in ("plugin.yml", "paper-plugin.yml") if name in archive.namelist()), None)
+                                if descriptor:
+                                    metadata = yaml.safe_load(archive.read(descriptor)) or {}
+                                    if isinstance(metadata, dict):
+                                        plugin["name"] = str(metadata.get("name") or item.name)
+                                        plugin["version"] = str(metadata.get("version") or "Unknown")
+                        except (OSError, KeyError, zipfile.BadZipFile, yaml.YAMLError):
+                            logger.warning("Unable to read plugin metadata from %s", item)
+                        page_data["plugins"].append(plugin)
                 except OSError:
                     logger.exception("Unable to list plugins in %s", plugins_dir)
 

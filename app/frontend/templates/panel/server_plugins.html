@@ -14,10 +14,11 @@
 
       <h5>Installed plugins</h5>
       {% if data['plugins'] %}
-      <ul class="list-group mb-4">
+      <ul id="installed-plugins" class="list-group mb-4">
         {% for plugin in data['plugins'] %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          {{ plugin['name'] }} <span class="text-muted">{{ plugin['size'] }} bytes</span>
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap" data-plugin-name="{{ plugin['name'] }}" data-plugin-file="{{ plugin['filename'] }}" data-plugin-version="{{ plugin['version'] }}">
+          <span><strong>{{ plugin['name'] }}</strong> <span class="text-muted">v{{ plugin['version'] }} · {{ plugin['size'] }} bytes</span><br><small class="plugin-update-status text-muted"></small></span>
+          <span class="mt-1 mt-sm-0"><button type="button" class="btn btn-sm btn-outline-secondary check-plugin-update">Check update</button> <button type="button" class="btn btn-sm btn-outline-primary update-plugin d-none">Update</button> <button type="button" class="btn btn-sm btn-outline-danger remove-plugin">Remove</button></span>
         </li>
         {% end %}
       </ul>
@@ -45,6 +46,7 @@
 </div>
 <script>
   const serverId = "{{ data['server_stats']['server_id']['server_id'] }}";
+  const serverVersion = "{{ data['server_stats'].get('version', '') }}";
   async function uploadPlugin(file) {
     const token = getCookie("_xsrf");
     const fileId = crypto.randomUUID();
@@ -68,6 +70,67 @@
     const result = await response.json();
     if (!response.ok || result.status !== "completed") throw new Error(result.error_data || "Upload failed");
   }
+  async function removePlugin(filename) {
+    const response = await fetch(`/api/v2/servers/${serverId}/files/`, {
+      method: "DELETE", headers: { "Content-Type": "application/json", "X-XSRFToken": getCookie("_xsrf") },
+      body: JSON.stringify({ file_system_objects: [{ filename: `plugins/${filename}` }] })
+    });
+    if (!response.ok) throw new Error((await response.text()) || "Remove failed");
+  }
+  async function latestPluginRelease(projectId) {
+    const versions = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(projectId)}/version?loaders=%5B%22paper%22%5D`).then((response) => {
+      if (!response.ok) throw new Error("Plugin is unavailable on Modrinth");
+      return response.json();
+    });
+    const compatible = versions.filter((version) => !serverVersion || (version.game_versions || []).includes(serverVersion));
+    const candidates = compatible.length ? compatible : versions;
+    return candidates.find((version) => version.version_type === "release") || candidates[0];
+  }
+  async function findPluginProject(name) {
+    const facets = encodeURIComponent(JSON.stringify([["project_type:plugin"], ["categories:paper"]]));
+    const response = await fetch(`https://api.modrinth.com/v2/search?query=${encodeURIComponent(name)}&facets=${facets}&limit=10`);
+    if (!response.ok) throw new Error("Plugin search failed");
+    const hits = (await response.json()).hits || [];
+    return hits.find((hit) => hit.title.toLowerCase() === name.toLowerCase()) || hits[0];
+  }
+  document.querySelectorAll("#installed-plugins > li").forEach((row) => {
+    const status = row.querySelector(".plugin-update-status");
+    const check = row.querySelector(".check-plugin-update");
+    const update = row.querySelector(".update-plugin");
+    check.addEventListener("click", async () => {
+      check.disabled = true; status.textContent = "Checking Modrinth...";
+      try {
+        const project = await findPluginProject(row.dataset.pluginName);
+        if (!project) throw new Error("Matching Modrinth project not found");
+        const release = await latestPluginRelease(project.project_id);
+        if (!release) throw new Error("No compatible Paper release found");
+        const current = row.dataset.pluginVersion;
+        const newer = current === "Unknown" || release.version_number !== current;
+        status.textContent = newer ? `Latest compatible: ${release.version_number}${serverVersion ? ` (MC ${serverVersion})` : ""}` : "Up to date";
+        if (newer) { update.classList.remove("d-none"); update.dataset.projectId = project.project_id; update.dataset.release = release.version_number; }
+      } catch (error) { status.textContent = `Check failed: ${error.message || error}`; }
+      check.disabled = false;
+    });
+    update.addEventListener("click", async () => {
+      update.disabled = true; status.textContent = "Updating...";
+      try {
+        const release = await latestPluginRelease(update.dataset.projectId);
+        const file = release && (release.files.find((candidate) => candidate.primary) || release.files[0]);
+        if (!file) throw new Error("No plugin file available");
+        await removePlugin(row.dataset.pluginFile);
+        const blob = await fetch(file.url).then((response) => response.blob());
+        await uploadPlugin(new File([blob], file.filename, { type: "application/java-archive" }));
+        status.textContent = "Updated. Restart Minecraft to load it.";
+        setTimeout(() => location.reload(), 1200);
+      } catch (error) { status.textContent = `Update failed: ${error.message || error}`; update.disabled = false; }
+    });
+    row.querySelector(".remove-plugin").addEventListener("click", async () => {
+      if (!confirm(`Remove ${row.dataset.pluginName}?`)) return;
+      status.textContent = "Removing...";
+      try { await removePlugin(row.dataset.pluginFile); row.remove(); }
+      catch (error) { status.textContent = `Remove failed: ${error.message || error}`; }
+    });
+  });
   document.getElementById("upload-plugin").addEventListener("click", async () => {
     const input = document.getElementById("plugin-file");
     const status = document.getElementById("plugin-status");
@@ -96,16 +159,16 @@
   function pluginCard(plugin, target) {
     const card = document.createElement("div");
     card.className = "col-md-6 col-lg-4 mb-3";
-    card.innerHTML = `<div class="card h-100"><div class="card-body d-flex flex-column"><h6>${escapeHtml(plugin.name)}</h6><p class="text-muted small flex-grow-1">${escapeHtml(plugin.description || "Paper plugin from Modrinth.")}</p><button class="btn btn-sm btn-outline-primary install-plugin">Install</button><span class="plugin-install-status small text-muted mt-2"></span></div></div>`;
+    card.innerHTML = `<div class="card h-100"><div class="card-body d-flex flex-column"><h6>${escapeHtml(plugin.name)}</h6><p class="text-muted small flex-grow-1">${escapeHtml(plugin.description || "Paper plugin from Modrinth.")}</p><p class="plugin-compatibility small text-info mb-2">Checking compatibility...</p><button class="btn btn-sm btn-outline-primary install-plugin">Install</button><span class="plugin-install-status small text-muted mt-2"></span></div></div>`;
+    latestPluginRelease(plugin.id).then((release) => {
+      const versions = (release && release.game_versions || []).join(", ") || "unknown";
+      card.querySelector(".plugin-compatibility").textContent = `Compatible Minecraft versions: ${versions}`;
+    }).catch(() => { card.querySelector(".plugin-compatibility").textContent = "Compatibility information unavailable"; });
     card.querySelector(".install-plugin").addEventListener("click", async () => {
       const status = card.querySelector(".plugin-install-status");
       status.textContent = "Fetching latest release...";
       try {
-        const versions = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(plugin.id)}/version?loaders=%5B%22paper%22%5D`).then((response) => {
-          if (!response.ok) throw new Error("Plugin is unavailable on Modrinth");
-          return response.json();
-        });
-        const release = versions.find((version) => version.version_type === "release") || versions[0];
+        const release = await latestPluginRelease(plugin.id);
         if (!release) throw new Error("No compatible Paper release found");
         const file = release.files.find((candidate) => candidate.primary) || release.files[0];
         const blob = await fetch(file.url).then((response) => response.blob());
