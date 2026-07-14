@@ -163,7 +163,33 @@
     }
   }
 
+  let activeActionPlayer = "";
+
+  async function showPlayerActions(playerName) {
+    activeActionPlayer = playerName;
+    $("#player-actions-title").text(`Actions - ${playerName}`);
+    $("#player-actions-status").text("Loading...").removeClass("d-none");
+    $("#player-action-buttons").addClass("d-none");
+    $("#player-actions-modal").modal("show");
+    try {
+      const response = await fetch(`/api/v2/servers/${serverId}/players/${encodeURIComponent(playerName)}`);
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error_data || result.error || "Unable to load player data");
+      const opButton = $(".player-action-op");
+      const isOp = Boolean(result.data.is_op);
+      opButton.text(isOp ? "De-OP" : "OP").data("command", `${isOp ? "deop" : "op"} ${playerName}`);
+      $("#player-actions-status").addClass("d-none");
+      $("#player-action-buttons").removeClass("d-none").addClass("d-flex");
+    } catch (error) {
+      $("#player-actions-status").text(`Unable to load player data: ${error.message || error}`);
+    }
+  }
+
   $(document).on("click", ".player-details", function () { showPlayerDetails($(this).data("player-name")); });
+  $(document).on("click", ".player-actions", function () { showPlayerActions($(this).data("player-name")); });
+  $(document).on("click", ".player-action-ban", function () { send_command_to_server(`ban ${activeActionPlayer}`); $("#player-actions-modal").modal("hide"); });
+  $(document).on("click", ".player-action-kick", function () { send_command_to_server(`kick ${activeActionPlayer}`); $("#player-actions-modal").modal("hide"); });
+  $(document).on("click", ".player-action-op", function () { send_command_to_server($(this).data("command")); $("#player-actions-modal").modal("hide"); });
 
 
 </script>

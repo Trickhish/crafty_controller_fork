@@ -36,16 +36,7 @@
                     <td class="no-scroll col-3">
                         {% if data['server_stats']['running'] %}
                         <div class="row">
-                            <div class="col"><button onclick="send_command_to_server(`ban {{ player['name'] }}`)"
-                                    type="button" class="btn btn-danger">Ban</button></div>
-                            <div class="col"><button onclick="send_command_to_server(`kick {{ player['name'] }}`)"
-                                    type="button" class="btn btn-outline-danger">Kick</button></div>
-                            {% if data['server_stats']['server_type'] == "hytale" %}
-                            <div class="col"><button onclick="send_command_to_server(`op add {{ player['name'] }}`)"
-                                    type="button" class="btn btn-warning">OP</button></div>
-                            <div class="col"><button onclick="send_command_to_server(`op remove {{ player['name'] }}`)"
-                                    type="button" class="btn btn-outline-warning">De-OP</button></div>
-                            {% end %}
+                            <div class="col"><button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}"><i class="ph ph-list"></i> Actions</button></div>
                         </div>
                         {% else %}
                         <span> Unavailable <br>(Server Offline)</span>
@@ -64,12 +55,18 @@
             <tbody id="offline-player-body">
                 {% for player in data['cached_players'] %}
                 {% if player['status'] == 'Offline' %}
-                <tr class="playerItem-- text-center"><td><button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button></td><td><span class="text-warning"><i class="ph ph-x-circle"></i> Last connection: {{ player['last_seen'] }}</span></td><td>{% if data['server_stats']['running'] %}<button onclick="send_command_to_server(`ban {{ player['name'] }}`)" type="button" class="btn btn-danger">Ban</button>{% else %}<span>Unavailable</span>{% end %}</td></tr>
+                <tr class="playerItem-- text-center"><td><button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button></td><td><span class="text-warning"><i class="ph ph-x-circle"></i> Last connection: {{ player['last_seen'] }}</span></td><td>{% if data['server_stats']['running'] %}<button type="button" class="btn btn-outline-primary player-actions" data-player-name="{{ player['name'] }}"><i class="ph ph-list"></i> Actions</button>{% else %}<span>Unavailable</span>{% end %}</td></tr>
                 {% end %}
                 {% end %}
             </tbody></table>
         </div>
     </details>
+</div>
+<div class="modal fade" id="player-actions-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="player-actions-title">Player actions</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body"><p id="player-actions-status" class="text-muted">Loading...</p><div id="player-action-buttons" class="d-none flex-wrap" style="gap:8px"><button type="button" class="btn btn-danger player-action-ban">Ban</button><button type="button" class="btn btn-outline-danger player-action-kick">Kick</button><button type="button" class="btn btn-warning player-action-op"></button></div></div>
+    </div></div>
 </div>
 <div class="modal fade" id="player-details-modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document"><div class="modal-content">

@@ -1,6 +1,7 @@
 """Read-only player information for server administration."""
 
 import logging
+import json
 from pathlib import Path
 
 from nbtlib import load
@@ -54,6 +55,7 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
             position = [round(float(value), 2) for value in data.get("Pos", [])]
             result = {
                 "name": player_name,
+                "is_op": self._is_operator(Path(server.path), player_name),
                 "health": round(float(data.get("Health", 0)), 1),
                 "food": int(data.get("foodLevel", 0)),
                 "position": position,
@@ -89,3 +91,15 @@ class ApiServersServerPlayerHandler(BaseApiHandler):
                 except (OSError, ValueError, TypeError):
                     continue
         return max(matches, key=lambda path: path.stat().st_mtime, default=None)
+
+    @staticmethod
+    def _is_operator(server_path: Path, player_name: str) -> bool:
+        try:
+            with (server_path / "ops.json").open("r", encoding="utf-8") as ops_file:
+                operators = json.load(ops_file)
+            return any(
+                str(operator.get("name", "")).casefold() == player_name.casefold()
+                for operator in operators
+            )
+        except (OSError, TypeError, ValueError):
+            return False
