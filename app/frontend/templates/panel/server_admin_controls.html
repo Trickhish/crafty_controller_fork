@@ -103,6 +103,35 @@
     console.log(responseData);
   }
 
+  function escapePlayerText(value) {
+    return String(value ?? "").replace(/[&<>\"']/g, (character) => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;"}[character]));
+  }
+
+  async function showPlayerDetails(playerName) {
+    $("#player-details-title").text(`Player details - ${playerName}`);
+    $("#player-details-status").text("Loading...").removeClass("d-none");
+    $("#player-details-content").addClass("d-none");
+    $("#player-details-modal").modal("show");
+    try {
+      const response = await fetch(`/api/v2/servers/${serverId}/players/${encodeURIComponent(playerName)}`);
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error_data || result.error || "Unable to load player data");
+      const player = result.data;
+      $("#player-details-status").addClass("d-none");
+      $("#player-details-content").removeClass("d-none");
+      $("#player-health").text(`${player.health}/20`);
+      $("#player-food").text(`${player.food}/20`);
+      $("#player-position").text(`${player.position.join(", ")} (${player.dimension})`);
+      const inventory = $("#player-inventory").empty();
+      if (!player.inventory.length) inventory.append("<li class='list-group-item text-muted'>Empty</li>");
+      player.inventory.forEach((item) => inventory.append(`<li class="list-group-item d-flex justify-content-between"><span>${escapePlayerText(item.item)}</span><span>x${item.count} <small class="text-muted">slot ${item.slot}</small></span></li>`));
+    } catch (error) {
+      $("#player-details-status").text(`Unable to load player data: ${error.message || error}`);
+    }
+  }
+
+  $(document).on("click", ".player-details", function () { showPlayerDetails($(this).data("player-name")); });
+
 
 </script>
 

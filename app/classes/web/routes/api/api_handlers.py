@@ -26,6 +26,7 @@ from app.classes.web.routes.api.servers.server.index import (
     ApiServersServerUpdateConfig,
 )
 from app.classes.web.routes.api.servers.server.logs import ApiServersServerLogsHandler
+from app.classes.web.routes.api.servers.server.players import ApiServersServerPlayerHandler
 from app.classes.web.routes.api.servers.server.public import (
     ApiServersServerPublicHandler,
 )
@@ -348,6 +349,11 @@ def api_handlers(handler_args):
         (
             r"/api/v2/servers/([a-z0-9-]+)/?",
             ApiServersServerIndexHandler,
+            handler_args,
+        ),
+        (
+            r"/api/v2/servers/([a-z0-9-]+)/players/([A-Za-z0-9_]+)/?",
+            ApiServersServerPlayerHandler,
             handler_args,
         ),
         (

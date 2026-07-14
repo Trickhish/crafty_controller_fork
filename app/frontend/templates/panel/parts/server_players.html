@@ -28,7 +28,7 @@
                 {% for player in data['cached_players'] %}
                 <tr id="playerItem-{{ player['name'] }}" class="playerItem-- text-center">
                     <td class=" no-scroll">
-                        <strong> {{ player['name'] }}</strong>
+                        <button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button>
                     </td>
                     {% if player['status'] == 'Online' %}
                     <td class="no-scroll col-5"><span class="text-success"><i class="ph ph-cell-signal-full"></i> {{
@@ -63,6 +63,15 @@
         </table>
     </div>
     </details>
+</div>
+<div class="modal fade" id="player-details-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="player-details-title">Player details</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body"><div id="player-details-status" class="text-muted">Loading...</div><div id="player-details-content" class="d-none">
+            <div class="row mb-3"><div class="col-md-3"><strong>Health</strong><br><span id="player-health"></span></div><div class="col-md-3"><strong>Food</strong><br><span id="player-food"></span></div><div class="col-md-6"><strong>Last coordinates</strong><br><span id="player-position"></span></div></div>
+            <h6>Inventory</h6><ul id="player-inventory" class="list-group"></ul>
+        </div></div>
+    </div></div>
 </div>
 <div class="col-xl-6 col-lg-12 no-scroll">
     <h2>{{ translate('serverPlayerManagement', 'bannedPlayers', data['lang']) }}:</h2>

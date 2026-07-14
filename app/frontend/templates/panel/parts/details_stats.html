@@ -237,7 +237,7 @@
     }
     for (let i = 0; i < players.length; i++) {
       text += `<tr id="playerItem-${players[i]["name"]}" class="playerItem-- text-center">`;
-      text += `<td class="no-scroll col-5"><strong>${players[i]["name"]}</strong></td>`;
+      text += `<td class="no-scroll col-5"><button type="button" class="btn btn-link p-0 player-details" data-player-name="${players[i]["name"]}"><strong>${players[i]["name"]}</strong></button></td>`;
       if (players[i]["status"] === "Online") {
         text += `<td class="col-4"><span class="text-success"><i class="ph ph-cell-signal-full"></i> ${players[i]['status']}</span></td>`
       } else {
