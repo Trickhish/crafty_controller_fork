@@ -6,16 +6,9 @@
                 <strong>Online players</strong>
                 <span class="badge badge-success" id="online-player-count">{{ len(data['online_players']) }}</span>
             </div>
-            <div id="online-player-list" class="text-muted">
-                {% if data['online_players'] %}
-                {% for player in data['online_players'] %}<span class="badge badge-light mr-1">{{ player['name'] }}</span>{% end %}
-                {% else %}No players online.{% end %}
-            </div>
         </div>
     </div>
-    <details class="mb-3">
-        <summary class="btn btn-outline-secondary">All players (<span id="all-player-count">{{ len(data['cached_players']) }}</span>)</summary>
-    <div class="table-responsive mt-3">
+    <div class="table-responsive">
         <table class="table no-scroll">
             <thead class="thead">
                 <tr>
@@ -24,8 +17,9 @@
                     <th scope="col-3">Actions</th>
                 </tr>
             </thead>
-            <tbody id="player-body">
+            <tbody id="online-player-body">
                 {% for player in data['cached_players'] %}
+                {% if player['status'] == 'Online' %}
                 <tr id="playerItem-{{ player['name'] }}" class="playerItem-- text-center">
                     <td class=" no-scroll">
                         <button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button>
@@ -59,9 +53,22 @@
                     </td>
                 </tr>
                 {% end %}
+                {% end %}
             </tbody>
         </table>
     </div>
+    <details class="mb-3 mt-3">
+        <summary class="btn btn-outline-secondary">Show offline players (<span id="offline-player-count">{{ len(data['cached_players']) - len(data['online_players']) }}</span>)</summary>
+        <div class="table-responsive mt-3">
+            <table class="table no-scroll"><thead class="thead"><tr><th>Player</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="offline-player-body">
+                {% for player in data['cached_players'] %}
+                {% if player['status'] == 'Offline' %}
+                <tr class="playerItem-- text-center"><td><button type="button" class="btn btn-link p-0 player-details" data-player-name="{{ player['name'] }}"><strong>{{ player['name'] }}</strong></button></td><td><span class="text-warning"><i class="ph ph-x-circle"></i> Last connection: {{ player['last_seen'] }}</span></td><td>{% if data['server_stats']['running'] %}<button onclick="send_command_to_server(`ban {{ player['name'] }}`)" type="button" class="btn btn-danger">Ban</button>{% else %}<span>Unavailable</span>{% end %}</td></tr>
+                {% end %}
+                {% end %}
+            </tbody></table>
+        </div>
     </details>
 </div>
 <div class="modal fade" id="player-details-modal" tabindex="-1" role="dialog" aria-hidden="true">

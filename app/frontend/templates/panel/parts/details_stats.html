@@ -222,29 +222,24 @@
     }
 
     initParser('input_motd', 'input_motd');
-    let text = ""
+    let rows = { online: "", offline: "" };
     let players = server.players_cache;
     let onlinePlayers = players.filter((player) => player["status"] === "Online");
     const onlineCount = document.getElementById("online-player-count");
-    const onlineList = document.getElementById("online-player-list");
-    const allCount = document.getElementById("all-player-count");
+    const offlineCount = document.getElementById("offline-player-count");
     if (onlineCount) onlineCount.textContent = onlinePlayers.length;
-    if (allCount) allCount.textContent = players.length;
-    if (onlineList) {
-      onlineList.innerHTML = onlinePlayers.length
-        ? onlinePlayers.map((player) => `<span class="badge badge-light mr-1">${player["name"]}</span>`).join("")
-        : "No players online.";
-    }
+    if (offlineCount) offlineCount.textContent = players.filter((player) => player["status"] !== "Online").length;
     for (let i = 0; i < players.length; i++) {
-      text += `<tr id="playerItem-${players[i]["name"]}" class="playerItem-- text-center">`;
-      text += `<td class="no-scroll col-5"><button type="button" class="btn btn-link p-0 player-details" data-player-name="${players[i]["name"]}"><strong>${players[i]["name"]}</strong></button></td>`;
+      const key = players[i]["status"] === "Online" ? "online" : "offline";
+      rows[key] += `<tr id="playerItem-${players[i]["name"]}" class="playerItem-- text-center">`;
+      rows[key] += `<td class="no-scroll col-5"><button type="button" class="btn btn-link p-0 player-details" data-player-name="${players[i]["name"]}"><strong>${players[i]["name"]}</strong></button></td>`;
       if (players[i]["status"] === "Online") {
-        text += `<td class="col-4"><span class="text-success"><i class="ph ph-cell-signal-full"></i> ${players[i]['status']}</span></td>`
+        rows[key] += `<td class="col-4"><span class="text-success"><i class="ph ph-cell-signal-full"></i> ${players[i]['status']}</span></td>`
       } else {
-        text += `<td class="col-4"><span class="text-warning"><i class="ph-fill ph-x-circle"></i><span class="offline-status">&nbsp;${players[i]['status']}</span><span class="conn-break"> Last connection :<br> ${players[i]['last_seen']}</span></td>`
+        rows[key] += `<td class="col-4"><span class="text-warning"><i class="ph-fill ph-x-circle"></i><span class="offline-status">&nbsp;${players[i]['status']}</span><span class="conn-break"> Last connection :<br> ${players[i]['last_seen']}</span></td>`
       }
       if (server["running"]) {
-        text += `<td class="col-3">
+        rows[key] += `<td class="col-3">
                     <div class="row">
                       <div class="col"><button onclick="send_command_to_server('ban ${players[i]['name']}')" type="button" class="btn btn-danger">Ban</button></div>
                       <div class="col"><button onclick="send_command_to_server('kick ${players[i]['name']}')" type="button" class="btn btn-outline-danger">Kick</button></div>
@@ -258,11 +253,12 @@
                     </div>
                   </td>`
       } else {
-        text += `<td><div><span> Unavailable<br> (Server Offline)</span></div></td>`
+        rows[key] += `<td><div><span> Unavailable<br> (Server Offline)</span></div></td>`
       }
-
+      rows[key] += `</tr>`;
     }
-    $("#player-body").html(text);
+    $("#online-player-body").html(rows.online || `<tr><td colspan="3" class="text-muted">No players online.</td></tr>`);
+    $("#offline-player-body").html(rows.offline || `<tr><td colspan="3" class="text-muted">No offline players.</td></tr>`);
 
   }
   //used to get cookies from browser - this is part of tornados xsrf protection - it's for extra security
