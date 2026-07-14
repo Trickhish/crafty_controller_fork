@@ -122,7 +122,10 @@
   function renderInventorySlot(item) {
     if (!item) return `<div class="minecraft-inventory-slot"></div>`;
     const itemId = String(item.item || "").split(":").pop();
-    const itemUrl = `/static/assets/minecraft/26.2/textures/item/${encodeURIComponent(itemId)}.png`;
+    const inventoryIconItems = new Set(["cobblestone", "dirt", "torch", "cactus"]);
+    const itemUrl = inventoryIconItems.has(itemId)
+      ? `/static/assets/minecraft/26.2/textures/item/invicon/${encodeURIComponent(itemId)}.png`
+      : `/static/assets/minecraft/26.2/textures/item/${encodeURIComponent(itemId)}.png`;
     const blockUrl = `/static/assets/minecraft/26.2/textures/block/${encodeURIComponent(itemId)}.png`;
     const fallback = `if (!this.dataset.blockFallback) { this.dataset.blockFallback = '1'; this.src = '${blockUrl}'; } else { this.style.display = 'none'; }`;
     return `<div class="minecraft-inventory-slot" title="${escapePlayerText(item.item)}"><img src="${itemUrl}" alt="${escapePlayerText(item.item)}" onerror="${fallback}"><span class="item-count">${item.count > 1 ? item.count : ""}</span></div>`;
