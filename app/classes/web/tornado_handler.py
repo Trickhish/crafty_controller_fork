@@ -10,6 +10,7 @@ import tornado.template
 import tornado.escape
 import tornado.locale
 import tornado.httpserver
+import tornado.httpclient
 
 from app.classes.models.management import HelpersManagement
 from app.classes.shared.console import Console
@@ -27,6 +28,34 @@ from app.classes.web.static_handler import CustomStaticHandler
 from app.classes.web.status_handler import StatusHandler
 
 logger = logging.getLogger(__name__)
+
+
+class BlueMapProxyHandler(tornado.web.RequestHandler):
+    """Authenticated reverse proxy for a server's local BlueMap webapp."""
+
+    async def get(self, server_id, path=""):
+        auth = self.controller.authentication.check(self.get_cookie("token"))
+        if not auth:
+            self.set_status(401)
+            return self.finish("Authentication required")
+        user = auth[2]
+        authorized = self.controller.servers.get_authorized_servers(user["user_id"])
+        if str(server_id) not in {str(server.server_id) for server in authorized}:
+            self.set_status(403)
+            return self.finish("Not authorized")
+        target = f"http://127.0.0.1:8100/{path}"
+        if self.request.query:
+            target += f"?{self.request.query}"
+        try:
+            response = await tornado.httpclient.AsyncHTTPClient().fetch(target)
+        except tornado.httpclient.HTTPError as error:
+            self.set_status(error.response.code if error.response else 502)
+            return self.finish("BlueMap is unavailable")
+        content_type = response.headers.get("Content-Type")
+        if content_type:
+            self.set_header("Content-Type", content_type)
+        self.set_status(response.code)
+        self.finish(response.body)
 
 
 class Webserver:
@@ -137,6 +166,7 @@ class Webserver:
         }
         handlers = [
             (r"/", DefaultHandler, handler_args),
+            (r"/bluemap/([a-z0-9-]+)/(.*)", BlueMapProxyHandler, handler_args),
             (r"/panel/(.*)", PanelHandler, handler_args),
             (r"/server/(.*)", ServerHandler, handler_args),
             (r"/ws", WebSocketHandler, handler_args),

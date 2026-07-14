@@ -6,10 +6,8 @@
   <div class="row"><div class="col-12 grid-margin"><div class="card"><div class="card-body">
     <span class="d-none d-sm-block">{% include "parts/server_controls_list.html" %}</span>
     <span class="d-block d-sm-none">{% include "parts/m_server_controls_list.html" %}</span>
-    <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap" style="gap:10px">
-      <span><strong>Rendered world map</strong><br><small>BlueMap is rendering the actual world with conservative settings. The first render may take a while.</small></span>
-      <a id="bluemap-link" class="btn btn-primary" target="_blank" rel="noopener">Open BlueMap</a>
-    </div>
+    <div class="alert alert-info"><strong>Rendered world map</strong><br><small>BlueMap is rendering the actual world with conservative settings. The first render may take a while.</small></div>
+    <iframe id="bluemap-frame" class="bluemap-frame" title="BlueMap world renderer"></iframe>
     <div class="d-flex align-items-center flex-wrap mb-3" style="gap:8px">
       <label class="mb-0" for="map-dimension">Dimension</label>
       <select id="map-dimension" class="form-control" style="max-width:240px"><option value="all">All dimensions</option></select>
@@ -24,10 +22,11 @@
   .world-map { height: min(70vh, 680px); min-height: 360px; background:#10151b; border:1px solid #39434d; border-radius:4px; overflow:hidden; cursor:grab; }
   .world-map.dragging { cursor:grabbing; }
   #world-map-canvas { width:100%; height:100%; display:block; }
+  .bluemap-frame { width:100%; height:min(75vh, 760px); min-height:480px; border:1px solid #39434d; border-radius:4px; background:#10151b; }
 </style>
 <script>
   const mapServerId = "{{ data['server_stats']['server_id']['server_id'] }}";
-  document.getElementById("bluemap-link").href = `${window.location.protocol}//${window.location.hostname}:8100/`;
+  document.getElementById("bluemap-frame").src = `/bluemap/${mapServerId}/`;
   const mapPlayerNames = [{% for player in data.get('cached_players', []) %}"{{ player['name'] }}",{% end %}];
   const mapOnlineNames = new Set([{% for player in data.get('cached_players', []) %}{% if player['status'] == 'Online' %}"{{ player['name'] }}",{% end %}{% end %}]);
   const mapCanvas = document.getElementById("world-map-canvas");
