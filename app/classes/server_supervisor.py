@@ -6,6 +6,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -14,6 +15,7 @@ class Supervisor:
     def __init__(self, socket_path):
         self.socket_path = socket_path
         self.workers = {}
+        self._start_lock = threading.Lock()
 
     @staticmethod
     def request(socket_path, payload):
@@ -24,38 +26,45 @@ class Supervisor:
             return json.loads(connection.makefile("rb").readline())
 
     def start_worker(self, request):
-        server_id = request["server_id"]
-        worker_socket = request["worker_socket"]
-        try:
-            status = self.request(worker_socket, {"action": "status"})
-            if status.get("running"):
-                return status
-        except (OSError, ValueError, json.JSONDecodeError):
-            pass
-        Path(worker_socket).unlink(missing_ok=True)
-        command = [
-            sys.executable,
-            "-m",
-            "app.classes.server_worker",
-            "--socket",
-            worker_socket,
-            "--cwd",
-            request["cwd"],
-            "--log",
-            request["log_path"],
-            *request["command"],
-        ]
-        subprocess.Popen(command, cwd=request["project_root"], start_new_session=True)
-        for _ in range(50):
-            time.sleep(0.1)
+        with self._start_lock:
+            server_id = request["server_id"]
+            worker_socket = request["worker_socket"]
+            socket_exists = Path(worker_socket).exists()
             try:
                 status = self.request(worker_socket, {"action": "status"})
                 if status.get("running"):
                     self.workers[server_id] = worker_socket
                     return status
             except (OSError, ValueError, json.JSONDecodeError):
-                continue
-        return {"ok": False, "error": "worker did not start"}
+                if socket_exists:
+                    return {
+                        "ok": False,
+                        "error": "server worker is unreachable; refusing to start a duplicate server",
+                    }
+            Path(worker_socket).unlink(missing_ok=True)
+            command = [
+                sys.executable,
+                "-m",
+                "app.classes.server_worker",
+                "--socket",
+                worker_socket,
+                "--cwd",
+                request["cwd"],
+                "--log",
+                request["log_path"],
+                *request["command"],
+            ]
+            subprocess.Popen(command, cwd=request["project_root"], start_new_session=True)
+            for _ in range(50):
+                time.sleep(0.1)
+                try:
+                    status = self.request(worker_socket, {"action": "status"})
+                    if status.get("running"):
+                        self.workers[server_id] = worker_socket
+                        return status
+                except (OSError, ValueError, json.JSONDecodeError):
+                    continue
+            return {"ok": False, "error": "worker did not start"}
 
     def handle(self, request):
         action = request.get("action")
