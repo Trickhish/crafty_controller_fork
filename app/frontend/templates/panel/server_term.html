@@ -220,7 +220,6 @@
       });
     }
     if (!res.ok) throw new Error(`Log request failed (${res.status})`);
-    }
   } catch (error) {
     console.warn('Unable to load server log:', error);
     setTimeout(get_server_log, 2000);
