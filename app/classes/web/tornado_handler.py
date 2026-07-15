@@ -62,6 +62,8 @@ class BlueMapProxyHandler(BaseHandler):
         if content_type:
             self.set_header("Content-Type", content_type)
         self.set_status(response.code)
+        if response.code in (204, 304):
+            return self.finish()
         self.finish(response.body)
 
 
