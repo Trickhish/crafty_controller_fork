@@ -197,7 +197,7 @@
     try {
     const token = getCookie("_xsrf")
     let colors = true;
-    let res = await fetch(`/api/v2/servers/${serverId}/logs?colors=${colors}`, {
+    let res = await fetch(`/api/v2/servers/${serverId}/logs?file=true&colors=${colors}`, {
       method: 'GET',
       headers: {
         'X-XSRFToken': token
