@@ -188,7 +188,9 @@
 
   if (webSocket) {
     webSocket.on('send_start_reload', function () {
-      location.reload()
+      // The terminal receives live state through the socket. A full reload
+      // would clear the current log view and interrupt the user's workflow.
+      console.debug('[Crafty] server state changed; terminal left in place');
     });
   }
   //{% end %}

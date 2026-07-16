@@ -983,7 +983,10 @@
 
     if (webSocket) {
       webSocket.on('send_start_reload', function () {
-        location.reload()
+        // Server state is already delivered through update_server_status.
+        // Avoid replacing the whole dashboard when a server starts/stops.
+        // This keeps filters, scroll position and open controls intact.
+        console.debug('[Crafty] server state changed; dashboard left in place');
       });
     }
 
