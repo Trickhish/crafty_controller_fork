@@ -119,6 +119,16 @@
     const hits = (await response.json()).hits || [];
     return hits.find((hit) => hit.title.toLowerCase() === name.toLowerCase()) || hits[0];
   }
+  function comparePluginVersions(left, right) {
+    const normalize = (value) => String(value || "")
+      .trim().replace(/^v/i, "").split(/[+-]/, 1)[0]
+      .split(".").map((part) => parseInt(part, 10) || 0);
+    const a = normalize(left); const b = normalize(right);
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+      if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0) ? 1 : -1;
+    }
+    return 0;
+  }
   document.querySelectorAll("#installed-plugins > li").forEach((row, index) => {
     const status = row.querySelector(".plugin-update-status");
     const check = row.querySelector(".check-plugin-update");
@@ -131,7 +141,7 @@
         const release = await latestPluginRelease(project.project_id);
         if (!release) throw new Error("No compatible Paper release found");
         const current = row.dataset.pluginVersion;
-        const newer = current === "Unknown" || release.version_number !== current;
+        const newer = current === "Unknown" || comparePluginVersions(release.version_number, current) > 0;
         status.textContent = newer ? `Latest compatible: ${release.version_number}${serverVersion ? ` (MC ${serverVersion})` : ""}` : "Up to date";
         if (newer) { update.classList.remove("d-none"); update.dataset.projectId = project.project_id; update.dataset.release = release.version_number; }
       } catch (error) { status.textContent = `Check failed: ${error.message || error}`; }
