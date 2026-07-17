@@ -320,6 +320,10 @@
     console.log("got response:");
     console.log(responseData);
     $("#server_command").val('')
+    // Commands are written asynchronously by the worker. Sync the persisted
+    // log shortly afterwards as a fallback for output that arrives between
+    // WebSocket reconnects or while the worker stream is being reattached.
+    setTimeout(() => get_server_log(), 700);
   }
 
 
